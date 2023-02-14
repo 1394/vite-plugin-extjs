@@ -3,6 +3,7 @@ import fg from 'fast-glob';
 import nodePath from "node:path";
 
 const PLUGIN_NAME = 'vite-import-ext';
+
 async function resolve(mappings, className) {
     const classParts = className.split('.');
     const namespace = classParts.shift();
@@ -25,7 +26,7 @@ async function resolve(mappings, className) {
     return Array.isArray(path) ? path : [path];
 }
 
-function realpath(path){
+function realpath(path) {
     return nodePath.normalize(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
 
@@ -54,8 +55,8 @@ const importExt = (mappings) => ({
                                     if (prop.key.name === 'extend') {
                                         extend.push(prop.value.value);
                                     }
-                                    // uses, requires
-                                    if (['uses', 'requires'].includes(prop.key.name)) {
+                                    // uses, requires, override
+                                    if (['uses', 'requires', 'override'].includes(prop.key.name)) {
                                         if (prop.value.type === 'ArrayExpression') {
                                             prop.value.elements.forEach(el => {
                                                 uses.push(el.value);
@@ -71,17 +72,21 @@ const importExt = (mappings) => ({
                 }
             })
             const imports = [...extend, ...uses, ...requires];
+            let importStr = '';
             for (const module of imports) {
                 const paths = await resolve(mappings, module);
                 paths.forEach(path => {
                     if (path) {
                         const realPath = realpath(path);
                         if (!existingImports.includes(realPath) && !existingImports.includes(`${realPath}.js`)) {
-                            code = `import '${path}.js';\n`.concat(code);
+                            importStr += `import '${path}.js';\n`;
                             existingImports.push(realPath);
                         }
                     }
                 });
+            }
+            if (importStr.length) {
+                code = `/*** <${PLUGIN_NAME}> ***/\n${importStr}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
         }
         return {code, ast, map: null};
