@@ -1,5 +1,3 @@
-import './RequiredModule.js';
-import '../more/DependentModule.js';
 import {Ext} from "/test/Ext.js";
 
 Ext.define('Some.other.BaseModule', {
