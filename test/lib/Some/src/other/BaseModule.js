@@ -1,6 +1,6 @@
-import '/lib/Some/src/other/RequiredModule.js';
-import '/lib/Some/src/more/DependentModule.js';
-import {Ext} from "/src/Ext.js";
+import './RequiredModule.js';
+import '../more/DependentModule.js';
+import {Ext} from "/test/Ext.js";
 
 Ext.define('Some.other.BaseModule', {
     extend: 'Some.more.DependentModule',

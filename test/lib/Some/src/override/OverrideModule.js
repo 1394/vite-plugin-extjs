@@ -1,4 +1,4 @@
-import {Ext} from "/src/Ext.js";
+import {Ext} from "/test/Ext.js";
 
 Ext.define('Some.other.OverrideModule', {
     override: 'Ext.panel.Panel',

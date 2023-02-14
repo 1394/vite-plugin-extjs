@@ -1,4 +1,4 @@
-import {Ext} from "/src/Ext.js";
+import {Ext} from "/test/Ext.js";
 
 Ext.define('Some.other.RequiredModule', {
     extend: 'Ext.panel.Panel',

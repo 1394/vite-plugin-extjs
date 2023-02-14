@@ -1,3 +1,3 @@
-import './src/Application';
+import './test/Application';
 
 console.log('Application Started.');
