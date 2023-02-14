@@ -1,6 +1,8 @@
 import {walk} from 'estree-walker';
 import fg from 'fast-glob';
+import nodePath from "node:path";
 
+const PLUGIN_NAME = 'vite-import-ext';
 async function resolve(mappings, className) {
     const classParts = className.split('.');
     const namespace = classParts.shift();
@@ -23,18 +25,25 @@ async function resolve(mappings, className) {
     return Array.isArray(path) ? path : [path];
 }
 
+function realpath(path){
+    return nodePath.normalize(process.cwd() + '\\' + path).replace(/\\/g, '/');
+}
+
 const importExt = (mappings) => ({
-    name: 'vite-import-ext',
+    name: PLUGIN_NAME,
     async transform(code, id) {
         let ast;
         const extend = [];
         const uses = [];
         const requires = [];
-        const resolved = [];
         if (id.endsWith('.js')) {
             ast = this.parse(code);
+            const existingImports = [];
             walk(ast, {
-                enter: node => {
+                enter: async node => {
+                    if (node.type === 'ImportDeclaration') {
+                        existingImports.push(realpath(node.source.value));
+                    }
                     if (node.type === 'ExpressionStatement') {
                         if (node.expression.callee.object.name === 'Ext') {
                             // Ext.define
@@ -65,13 +74,14 @@ const importExt = (mappings) => ({
             for (const module of imports) {
                 const paths = await resolve(mappings, module);
                 paths.forEach(path => {
-                    path && resolved.push(path);
+                    if (path) {
+                        const realPath = realpath(path);
+                        if (!existingImports.includes(realPath) && !existingImports.includes(`${realPath}.js`)) {
+                            code = `import '${path}.js';\n`.concat(code);
+                            existingImports.push(realPath);
+                        }
+                    }
                 });
-            }
-        }
-        for (const resolvedPath of resolved) {
-            if (resolvedPath) {
-                code = `import '${resolvedPath}.js';\n`.concat(code);
             }
         }
         return {code, ast, map: null};
