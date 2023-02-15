@@ -1,16 +1,17 @@
 {
   "name": "vite-plugin-import-extjs",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --force",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "estree-walker": "^3.0.3",
-    "fast-glob": "^3.2.12"
+    "fast-glob": "^3.2.12",
+    "ru.coon": "git+http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git#VITE-TR-63848"
   },
   "devDependencies": {
     "vite": "^4.1.0"
