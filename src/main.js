@@ -34,7 +34,7 @@ export default (mappings) => {
     return {
         name: PLUGIN_NAME,
         async transform(code, id) {
-            if (!mappings || id.endsWith('.css')) {
+            if (!mappings || id.endsWith('.css') || id.endsWith('.html')) {
                 return;
             }
             let ast;
