@@ -1,4 +1,4 @@
-import {walk} from 'estree-walker';
+import {simple} from 'acorn-walk';
 import fg from 'fast-glob';
 import nodePath from "node:path";
 
@@ -43,33 +43,31 @@ export default (mappings) => {
             const requires = [];
             ast = this.parse(code);
             const existingImports = [];
-            walk(ast, {
-                enter: async node => {
-                    if (node.type === 'ImportDeclaration') {
-                        existingImports.push(realpath(node.source.value));
-                    }
-                    if (node.type === 'ExpressionStatement') {
-                        if (node.expression.callee?.object?.name === 'Ext') {
-                            // Ext.define
-                            if (node.expression.callee.property.name === 'define') {
-                                const props = node.expression.arguments[1].properties;
-                                props?.forEach(prop => {
-                                    // extend
-                                    if (prop.key.name === 'extend') {
-                                        extend.push(prop.value.value);
+            simple(ast, {
+                ImportDeclaration(node){
+                    existingImports.push(realpath(node.source.value));
+                },
+                ExpressionStatement(node){
+                    if (node.expression.callee?.object?.name === 'Ext') {
+                        // Ext.define
+                        if (node.expression.callee.property.name === 'define') {
+                            const props = node.expression.arguments[1].properties;
+                            props?.forEach(prop => {
+                                // extend
+                                if (prop.key.name === 'extend') {
+                                    extend.push(prop.value.value);
+                                }
+                                // uses, requires, override, mixins
+                                if (['uses', 'requires', 'override', 'mixins'].includes(prop.key.name)) {
+                                    if (prop.value.type === 'ArrayExpression') {
+                                        prop.value.elements.forEach(el => {
+                                            uses.push(el.value);
+                                        });
+                                    } else if (prop.value.type === 'Literal') {
+                                        uses.push(prop.value.value);
                                     }
-                                    // uses, requires, override, mixins
-                                    if (['uses', 'requires', 'override', 'mixins'].includes(prop.key.name)) {
-                                        if (prop.value.type === 'ArrayExpression') {
-                                            prop.value.elements.forEach(el => {
-                                                uses.push(el.value);
-                                            });
-                                        } else if (prop.value.type === 'Literal') {
-                                            uses.push(prop.value.value);
-                                        }
-                                    }
-                                });
-                            }
+                                }
+                            });
                         }
                     }
                 }

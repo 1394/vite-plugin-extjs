@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "estree-walker": "^3.0.3",
+    "acorn-walk": "^8.2.0",
     "fast-glob": "^3.2.12",
     "ru.coon": "git+http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git#VITE-TR-63848"
   },

@@ -1,15 +1,15 @@
 lockfileVersion: 5.4
 
 specifiers:
-  estree-walker: ^3.0.3
+  acorn-walk: ^8.2.0
   fast-glob: ^3.2.12
   ru.coon: git+http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git#VITE-TR-63848
   vite: ^4.1.0
 
 dependencies:
-  estree-walker: 3.0.3
+  acorn-walk: 8.2.0
   fast-glob: 3.2.12
-  ru.coon: gitlab-dbr.sigma-it.local/dbr/ru.coon/ae50e44da7e892e192d7034d8acd4bc0cc335693
+  ru.coon: gitlab-dbr.sigma-it.local/dbr/ru.coon/07043331915f09991b9e6d4537e5d46e8490237a
 
 devDependencies:
   vite: 4.1.1
@@ -235,8 +235,9 @@ packages:
       fastq: 1.15.0
     dev: false
 
-  /@types/estree/1.0.0:
-    resolution: {integrity: sha512-WulqXMDUTYAXCjZnk6JtIHPigp55cVtDgDrO2gHRwhyJto21+1zbVCtOYB2L1F9w4qCQ0rOGWBnBe0FNTiEJIQ==}
+  /acorn-walk/8.2.0:
+    resolution: {integrity: sha512-k+iyHEuPgSw6SbuDpGQM+06HQUa04DZ3o+F6CSzXMvvI5KMvnaEqXe+YVe555R9nn6GPt404fos4wcgpw12SDA==}
+    engines: {node: '>=0.4.0'}
     dev: false
 
   /braces/3.0.2:
@@ -275,12 +276,6 @@ packages:
       '@esbuild/win32-ia32': 0.16.17
       '@esbuild/win32-x64': 0.16.17
     dev: true
-
-  /estree-walker/3.0.3:
-    resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
-    dependencies:
-      '@types/estree': 1.0.0
-    dev: false
 
   /fast-glob/3.2.12:
     resolution: {integrity: sha512-DVj4CQIYYow0BlaelwK1pHl5n5cRSJfM60UA0zK891sVInoPri2Ekj7+e1CT3/3qxXenpI+nBBmQAcJPJgaj4w==}
@@ -478,8 +473,8 @@ packages:
       fsevents: 2.3.2
     dev: true
 
-  gitlab-dbr.sigma-it.local/dbr/ru.coon/ae50e44da7e892e192d7034d8acd4bc0cc335693:
-    resolution: {commit: ae50e44da7e892e192d7034d8acd4bc0cc335693, repo: http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git, type: git}
+  gitlab-dbr.sigma-it.local/dbr/ru.coon/07043331915f09991b9e6d4537e5d46e8490237a:
+    resolution: {commit: 07043331915f09991b9e6d4537e5d46e8490237a, repo: http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git, type: git}
     name: ru.coon
     version: 2.1.209
     dev: false
