@@ -30,7 +30,56 @@ function realpath(path) {
     return nodePath.normalize(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
 
-export default (mappings) => {
+function replaceCode(code, node, replacement = '') {
+    let transformedCode = code.slice(0, node.start);
+    transformedCode += replacement;
+    transformedCode += code.slice(node.end);
+    return transformedCode;
+}
+
+function getSource(code, node) {
+    return code.slice(node.start, node.end);
+}
+
+function argsToStr(code, args = []) {
+    return args.reduce((prev, cur) => prev += getSource(code, cur), '');
+}
+
+const replaceCallParent = (className, fnName, scope, args) => {
+    const argStr = args.length ? `${scope}, ${args}` : scope;
+    return `(${className}.prototype || ${className})['${fnName}'].apply(${argStr})`;
+}
+
+function findCallParent(code, node, className) {
+    let result;
+    simple(node, {
+        Property: (prop) => {
+            if (prop.value?.type === 'FunctionExpression') {
+                const fnName = prop.key.name;
+                simple(prop, {
+                    FunctionExpression: (fnBody) => {
+                        simple(fnBody, {
+                            CallExpression(node) {
+                                if (node.callee?.property?.name === 'callParent') {
+                                    const parentClassFn = replaceCallParent(
+                                        className,
+                                        fnName,
+                                        getSource(code, node.callee.object),
+                                        argsToStr(code, node.arguments)
+                                    );
+                                    result = replaceCode(code, node, parentClassFn);
+                                }
+                            }
+                        });
+                    }
+                })
+            }
+        }
+    });
+    return result || code;
+}
+
+export default (mappings, options = {replaceCallParent: true}) => {
     return {
         name: PLUGIN_NAME,
         async transform(code, id) {
@@ -44,10 +93,10 @@ export default (mappings) => {
             ast = this.parse(code);
             const existingImports = [];
             simple(ast, {
-                ImportDeclaration(node){
+                ImportDeclaration(node) {
                     existingImports.push(realpath(node.source.value));
                 },
-                ExpressionStatement(node){
+                ExpressionStatement: (node) => {
                     if (node.expression.callee?.object?.name === 'Ext') {
                         // Ext.define
                         if (node.expression.callee.property.name === 'define') {
@@ -56,6 +105,10 @@ export default (mappings) => {
                                 // extend
                                 if (prop.key.name === 'extend') {
                                     extend.push(prop.value.value);
+                                    if (options.replaceCallParent === true) {
+                                        // TODO update ast after replace callParent
+                                        code = findCallParent(code, node, prop.value.value);
+                                    }
                                 }
                                 // uses, requires, override, mixins
                                 if (['uses', 'requires', 'override', 'mixins'].includes(prop.key.name)) {
@@ -70,7 +123,7 @@ export default (mappings) => {
                             });
                         }
                     }
-                }
+                },
             })
             const imports = [...extend, ...uses, ...requires];
             let importStr = '';

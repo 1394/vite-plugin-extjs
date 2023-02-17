@@ -3,6 +3,7 @@ Ext.define('Some.other.BaseModule', {
     requires: ['Some.other.RequiredModule'],
     uses: [],
     constructor() {
-        console.log('BaseModule');
+        console.log('BaseModule constructor');
+        this.callParent();
     }
 });

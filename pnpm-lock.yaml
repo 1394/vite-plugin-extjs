@@ -3,12 +3,14 @@ lockfileVersion: 5.4
 specifiers:
   acorn-walk: ^8.2.0
   fast-glob: ^3.2.12
+  magic-string: ^0.29.0
   ru.coon: git+http://gitlab-dbr.sigma-it.local/dbr/ru.coon.git#VITE-TR-63848
   vite: ^4.1.0
 
 dependencies:
   acorn-walk: 8.2.0
   fast-glob: 3.2.12
+  magic-string: 0.29.0
   ru.coon: gitlab-dbr.sigma-it.local/dbr/ru.coon/07043331915f09991b9e6d4537e5d46e8490237a
 
 devDependencies:
@@ -214,6 +216,10 @@ packages:
     dev: true
     optional: true
 
+  /@jridgewell/sourcemap-codec/1.4.14:
+    resolution: {integrity: sha512-XPSJHWmi394fuUuzDnGz1wiKqWfo1yXecHQMRf2l6hztTO+nPru658AyDngaBe7isIxEkRsPR3FZh+s7iVa4Uw==}
+    dev: false
+
   /@nodelib/fs.scandir/2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -348,6 +354,13 @@ packages:
   /is-number/7.0.0:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
+    dev: false
+
+  /magic-string/0.29.0:
+    resolution: {integrity: sha512-WcfidHrDjMY+eLjlU+8OvwREqHwpgCeKVBUpQ3OhYYuvfaYCUgcbuBzappNzZvg/v8onU3oQj+BYpkOJe9Iw4Q==}
+    engines: {node: '>=12'}
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.4.14
     dev: false
 
   /merge2/1.4.1:
