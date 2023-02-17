@@ -51,7 +51,7 @@ const replaceCallParent = (className, fnName, scope, args) => {
 }
 
 function findCallParent(code, node, className) {
-    let result;
+    const matches = [];
     simple(node, {
         Property: (prop) => {
             if (prop.value?.type === 'FunctionExpression') {
@@ -61,13 +61,13 @@ function findCallParent(code, node, className) {
                         simple(fnBody, {
                             CallExpression(node) {
                                 if (node.callee?.property?.name === 'callParent') {
-                                    const parentClassFn = replaceCallParent(
+                                    const replacement = replaceCallParent(
                                         className,
                                         fnName,
                                         getSource(code, node.callee.object),
                                         argsToStr(code, node.arguments)
                                     );
-                                    result = replaceCode(code, node, parentClassFn);
+                                    matches.push({node, replacement});
                                 }
                             }
                         });
@@ -76,7 +76,7 @@ function findCallParent(code, node, className) {
             }
         }
     });
-    return result || code;
+    return matches;
 }
 
 export default (mappings, options = {replaceCallParent: true}) => {
@@ -92,6 +92,7 @@ export default (mappings, options = {replaceCallParent: true}) => {
             const requires = [];
             ast = this.parse(code);
             const existingImports = [];
+            let callParentNodes;
             simple(ast, {
                 ImportDeclaration(node) {
                     existingImports.push(realpath(node.source.value));
@@ -106,8 +107,7 @@ export default (mappings, options = {replaceCallParent: true}) => {
                                 if (prop.key.name === 'extend') {
                                     extend.push(prop.value.value);
                                     if (options.replaceCallParent === true) {
-                                        // TODO update ast after replace callParent
-                                        code = findCallParent(code, node, prop.value.value);
+                                        callParentNodes = findCallParent(code, node, prop.value.value);
                                     }
                                 }
                                 // uses, requires, override, mixins
@@ -140,9 +140,15 @@ export default (mappings, options = {replaceCallParent: true}) => {
                 }
 
             }
+            if (options.replaceCallParent === true && callParentNodes && callParentNodes.length) {
+                callParentNodes.reverse().forEach(({node, replacement}) => {
+                    code = replaceCode(code, node, replacement);
+                });
+            }
             if (importStr.length) {
                 code = `/*** <${PLUGIN_NAME}> ***/\n${importStr}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
+            // TODO do not return ast if its changed (callParent replaced or added imports)
             return {code, ast: importStr.length ? undefined : ast};
         },
     }
