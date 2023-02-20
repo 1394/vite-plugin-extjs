@@ -1,6 +1,6 @@
 import {simple} from 'acorn-walk';
 import fg from 'fast-glob';
-import nodePath from "node:path";
+import nodePath from 'node:path';
 
 const PLUGIN_NAME = 'vite-import-ext';
 
@@ -45,12 +45,16 @@ function argsToStr(code, args = []) {
     return args.reduce((prev, cur) => prev += getSource(code, cur), '');
 }
 
-const replaceCallParent = (className, fnName, scope, args) => {
+const replaceCallParent = (className, fnName, scope, args, isOverride) => {
     const argStr = args.length ? `${scope}, ${args}` : scope;
-    return `(${className}.prototype || ${className})['${fnName}'].apply(${argStr})`;
+    let fn = `(${className}.prototype || ${className})['${fnName}']`;
+    if (isOverride) {
+        fn = `(${fn}['$previous'] || ${fn})`;
+    }
+    return `${fn}.apply(${argStr})`;
 }
 
-function findCallParent(code, node, className) {
+function findCallParent(code, node, className, isOverride) {
     const matches = [];
     simple(node, {
         Property: (prop) => {
@@ -65,14 +69,16 @@ function findCallParent(code, node, className) {
                                         className,
                                         fnName,
                                         getSource(code, node.callee.object),
-                                        argsToStr(code, node.arguments)
+                                        argsToStr(code, node.arguments),
+                                        isOverride
                                     );
+                                    //TODO push only start & end
                                     matches.push({node, replacement});
                                 }
                             }
                         });
                     }
-                })
+                });
             }
         }
     });
@@ -84,6 +90,10 @@ export default (mappings, options = {replaceCallParent: true}) => {
         name: PLUGIN_NAME,
         async transform(code, id) {
             if (!mappings || id.endsWith('.css') || id.endsWith('.html')) {
+                return;
+            }
+            // Check if is Vite file
+            if (id.includes('node_modules/.vite')) {
                 return;
             }
             let ast;
@@ -103,11 +113,11 @@ export default (mappings, options = {replaceCallParent: true}) => {
                         if (node.expression.callee.property.name === 'define') {
                             const props = node.expression.arguments[1].properties;
                             props?.forEach(prop => {
-                                // extend
-                                if (prop.key.name === 'extend') {
+                                // extend, override
+                                if (['extend', 'override'].includes(prop.key.name)) {
                                     extend.push(prop.value.value);
                                     if (options.replaceCallParent === true) {
-                                        callParentNodes = findCallParent(code, node, prop.value.value);
+                                        callParentNodes = findCallParent(code, node, prop.value.value, prop.key.name === 'override');
                                     }
                                 }
                                 // uses, requires, override, mixins
@@ -124,7 +134,7 @@ export default (mappings, options = {replaceCallParent: true}) => {
                         }
                     }
                 },
-            })
+            });
             const imports = [...extend, ...uses, ...requires];
             let importStr = '';
             for (const module of imports) {
@@ -140,6 +150,7 @@ export default (mappings, options = {replaceCallParent: true}) => {
                 }
 
             }
+            let originalCode = code;
             if (options.replaceCallParent === true && callParentNodes && callParentNodes.length) {
                 callParentNodes.reverse().forEach(({node, replacement}) => {
                     code = replaceCode(code, node, replacement);
@@ -148,8 +159,8 @@ export default (mappings, options = {replaceCallParent: true}) => {
             if (importStr.length) {
                 code = `/*** <${PLUGIN_NAME}> ***/\n${importStr}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
-            // TODO do not return ast if its changed (callParent replaced or added imports)
-            return {code, ast: importStr.length ? undefined : ast};
+            const isChangedCode = (originalCode === code);
+            return {code, ast: isChangedCode ? undefined : ast};
         },
-    }
+    };
 }
