@@ -86,8 +86,12 @@ function findCallParent(code, node, className, isOverride) {
 }
 
 const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) => {
+    let MODE;
     return {
         name: PLUGIN_NAME,
+        config(config, {mode}) {
+            MODE = mode;
+        },
         async transform(code, id) {
             if (!mappings || id.endsWith('.css') || id.endsWith('.html')) {
                 return;
@@ -158,6 +162,9 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
             }
             if (importStr.length) {
                 code = `/*** <${PLUGIN_NAME}> ***/\n${importStr}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
+            }
+            if (MODE === 'production') {
+                return {code};
             }
             const isChangedCode = (originalCode === code);
             return {code, ast: isChangedCode ? undefined : ast};
