@@ -98,7 +98,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
             MODE = mode;
         },
         async transform(code, id) {
-            if (!mappings || id.endsWith('.css') || id.endsWith('.html')) {
+            if (!mappings || id.endsWith('.css') || id.endsWith('.html') || id.endsWith('?direct')) {
                 return;
             }
             // Check if is Vite file
