@@ -54,6 +54,11 @@ const replaceCallParentDirect = (className, fnName, scope, args, isOverride) => 
     return `${fn}.apply(${argStr})`;
 }
 
+const replaceCallParentSuper = (className, fnName, scope, args) => {
+    const argStr = args.length ? `, ${args}` : '';
+    return `${scope}.super(${scope}, '${fnName}'${argStr})`;
+}
+
 function findCallParent(code, node, className, isOverride) {
     const matches = [];
     simple(node, {
