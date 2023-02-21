@@ -1,10 +1,10 @@
-import importExt from './src/main';
+import {viteImportExtjsRequires} from './src/index';
 export default {
     optimizeDeps: {
         force: true,
     },
     plugins: [
-        importExt({
+        viteImportExtjsRequires({
             Some: '/test/lib/Some/src',
             overrides:'/test/lib/overrides'
         })

@@ -2,7 +2,7 @@ import {simple} from 'acorn-walk';
 import fg from 'fast-glob';
 import nodePath from 'node:path';
 
-const PLUGIN_NAME = 'vite-import-ext';
+const PLUGIN_NAME = 'vite-plugin-extjs';
 
 async function resolve(mappings, className) {
     const classParts = className.split('.');
@@ -42,10 +42,10 @@ function getSource(code, node) {
 }
 
 function argsToStr(code, args = []) {
-    return args.reduce((prev, cur) => prev += getSource(code, cur), '');
+    return args.reduce((_, cur) => getSource(code, cur), '');
 }
 
-const replaceCallParent = (className, fnName, scope, args, isOverride) => {
+const replaceCallParentDirect = (className, fnName, scope, args, isOverride) => {
     const argStr = args.length ? `${scope}, ${args}` : scope;
     let fn = `(${className}.prototype || ${className})['${fnName}']`;
     if (isOverride) {
@@ -65,7 +65,7 @@ function findCallParent(code, node, className, isOverride) {
                         simple(fnBody, {
                             CallExpression(node) {
                                 if (node.callee?.property?.name === 'callParent') {
-                                    const replacement = replaceCallParent(
+                                    const replacement = replaceCallParentDirect(
                                         className,
                                         fnName,
                                         getSource(code, node.callee.object),
@@ -85,7 +85,7 @@ function findCallParent(code, node, className, isOverride) {
     return matches;
 }
 
-export default (mappings, options = {replaceCallParent: true}) => {
+const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) => {
     return {
         name: PLUGIN_NAME,
         async transform(code, id) {
@@ -164,3 +164,4 @@ export default (mappings, options = {replaceCallParent: true}) => {
         },
     };
 }
+export {viteImportExtjsRequires}
