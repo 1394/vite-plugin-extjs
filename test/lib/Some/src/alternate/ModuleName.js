@@ -6,6 +6,6 @@ Ext.define('Some.alternate.ModuleName', {
     requires: [],
     uses: [],
     constructor() {
-        console.log('ModuleName');
+        console.log('alternate.ModuleName');
     }
 });

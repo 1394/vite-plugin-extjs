@@ -13,8 +13,8 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
         ...classMeta.mixins
     ].filter(Boolean);
 
-    for (const module of imports) {
-        const paths = await resolve(mappings, module, classMeta.name, classAlternateNames);
+    for (const className of imports) {
+        const paths = await resolve(mappings, className, classMeta.name, classAlternateNames);
         for (const path of paths) {
             if (path) {
                 const realPath = realpath(path);
@@ -36,9 +36,9 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
  * @param {object} mappings
  * @param {string} className
  * @param {string} requiredBy
- * @param {Map} classAlternateNames
+ * @param {object} classAlternateNames
  */
-async function resolve(mappings, className, requiredBy, classAlternateNames) {
+async function resolve(mappings, className, requiredBy, classAlternateNames = {}) {
     const classParts = className.split('.');
     const namespace = classParts.shift();
     let path;
@@ -58,12 +58,20 @@ async function resolve(mappings, className, requiredBy, classAlternateNames) {
         });
     }
     if (!path) {
-        /*if (classAlternateNames && classAlternateNames.size) {
-            classAlternateNames.forEach((value, key) => {
-                console.log(key, className);
-            });
-        }*/
-        console.log(classAlternateNames.size, `${className}:${requiredBy}`);
+        if (typeof classAlternateNames === 'object') {
+            let realClassName;
+            for (const key in classAlternateNames) {
+                if (key === className) {
+                    realClassName = classAlternateNames[key];
+                }
+            }
+            if (realClassName) {
+                return await resolve(mappings, realClassName, requiredBy, classAlternateNames);
+            }
+        }
+    }
+    if(!path){
+        console.log('\x1b[33m%s\x1b[0m', `[${PLUGIN_NAME}] '${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
     }
     return Array.isArray(path) ? path : [path];
 }
@@ -171,7 +179,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
     let MODE;
     let ENTRY;
     const classMap = new Map();
-    const classAlternateNames = new Map();
+    const classAlternateNames = {};
     const importsMap = [];
     return {
         name: PLUGIN_NAME,
@@ -242,7 +250,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
                 classMap.set(definedClass.name, definedClass);
                 if (definedClass.alternateNames.length) {
                     definedClass.alternateNames.forEach(name => {
-                        classAlternateNames.set(name, definedClass.name);
+                        classAlternateNames[name] = definedClass.name;
                     });
                 }
                 await resolveClassImports(mappings, definedClass, importsMap, classAlternateNames);
