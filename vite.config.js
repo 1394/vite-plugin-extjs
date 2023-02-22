@@ -1,4 +1,5 @@
 import {viteImportExtjsRequires} from './src/index';
+
 export default {
     optimizeDeps: {
         force: true,
@@ -6,7 +7,8 @@ export default {
     plugins: [
         viteImportExtjsRequires({
             Some: '/test/lib/Some/src',
-            overrides:'/test/lib/overrides'
+            overrides: '/test/lib/overrides',
+            Ext: false
         })
     ]
 }

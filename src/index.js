@@ -42,6 +42,9 @@ async function resolve(mappings, className, requiredBy, classAlternateNames = {}
     const classParts = className.split('.');
     const namespace = classParts.shift();
     let path;
+    if (mappings[namespace] === false) {
+        return [];
+    }
     if (mappings[namespace]) {
         path = [mappings[namespace]].concat(classParts).join('/');
     }
@@ -190,11 +193,11 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
         async transform(code, id) {
             typeof ENTRY === 'undefined' && (ENTRY = id);
             if (!mappings || id.endsWith('.css') || id.endsWith('.html') || id.endsWith('?direct')) {
-                return;
+                return {code};
             }
             // Check if is Vite file
             if (id.includes('node_modules/.vite') || id.includes('vite@')) {
-                return;
+                return {code};
             }
             const ast = this.parse(code);
             let callParentNodes = [];
