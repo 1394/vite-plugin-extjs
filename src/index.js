@@ -4,7 +4,41 @@ import nodePath from 'node:path';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
 
-async function resolve(mappings, className) {
+async function resolveClassImports(mappings, classMeta, importsMap, classAlternateNames) {
+    const imports = [
+        classMeta.extend,
+        classMeta.override,
+        ...classMeta.requires,
+        ...classMeta.uses,
+        ...classMeta.mixins
+    ].filter(Boolean);
+
+    for (const module of imports) {
+        const paths = await resolve(mappings, module, classMeta.name, classAlternateNames);
+        for (const path of paths) {
+            if (path) {
+                const realPath = realpath(path);
+                let include = true;
+                if (Array.isArray(importsMap)) {
+                    if (!importsMap.includes(realPath) && !importsMap.includes(`${realPath}.js`)) {
+                        importsMap.push(realPath);
+                    } else {
+                        include = false;
+                    }
+                }
+                include && classMeta.imports.push(path);
+            }
+        }
+    }
+}
+
+/**
+ * @param {object} mappings
+ * @param {string} className
+ * @param {string} requiredBy
+ * @param {Map} classAlternateNames
+ */
+async function resolve(mappings, className, requiredBy, classAlternateNames) {
     const classParts = className.split('.');
     const namespace = classParts.shift();
     let path;
@@ -22,6 +56,14 @@ async function resolve(mappings, className) {
             }
             return realPath;
         });
+    }
+    if (!path) {
+        /*if (classAlternateNames && classAlternateNames.size) {
+            classAlternateNames.forEach((value, key) => {
+                console.log(key, className);
+            });
+        }*/
+        console.log(classAlternateNames.size, `${className}:${requiredBy}`);
     }
     return Array.isArray(path) ? path : [path];
 }
@@ -43,6 +85,18 @@ function getSource(code, node) {
 
 function argsToStr(code, args = []) {
     return args.reduce((_, cur) => getSource(code, cur), '');
+}
+
+function propToArray({type, elements, value}) {
+    const result = [];
+    if (type === 'ArrayExpression') {
+        elements.forEach(el => {
+            result.push(el.value);
+        });
+    } else if (type === 'Literal') {
+        result.push(value);
+    }
+    return result;
 }
 
 const replaceCallParentDirect = (className, fnName, scope, args, isOverride) => {
@@ -90,83 +144,114 @@ function findCallParent(code, node, className, isOverride) {
     return matches;
 }
 
+class ExtClassProps {
+    name = '';
+    alias = '';
+    extend;
+    override;
+    alternateNames = [];
+    requires = [];
+    uses = [];
+    mixins = [];
+    imports = [];
+}
+
+class ExtClassMeta extends ExtClassProps {
+    constructor() {
+        super();
+        Object.assign(this, ...arguments);
+    }
+
+    getImportString() {
+        return this.imports.reduce((str, path) => `${str}import '${path}.js';\n`, '');
+    }
+}
+
 const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) => {
     let MODE;
+    let ENTRY;
+    const classMap = new Map();
+    const classAlternateNames = new Map();
+    const importsMap = [];
     return {
         name: PLUGIN_NAME,
         config(config, {mode}) {
             MODE = mode;
+            // TODO check mappings - error if path is not exists
         },
         async transform(code, id) {
+            typeof ENTRY === 'undefined' && (ENTRY = id);
             if (!mappings || id.endsWith('.css') || id.endsWith('.html') || id.endsWith('?direct')) {
                 return;
             }
             // Check if is Vite file
-            if (id.includes('node_modules/.vite')) {
+            if (id.includes('node_modules/.vite') || id.includes('vite@')) {
                 return;
             }
-            let ast;
-            const extend = [];
-            const uses = [];
-            const requires = [];
-            ast = this.parse(code);
-            const existingImports = [];
-            let callParentNodes;
+            const ast = this.parse(code);
+            let callParentNodes = [];
+            const definedClasses = [];
             simple(ast, {
                 ImportDeclaration(node) {
-                    existingImports.push(realpath(node.source.value));
+                    importsMap.push(realpath(node.source.value));
                 },
                 ExpressionStatement: (node) => {
                     if (node.expression.callee?.object?.name === 'Ext') {
                         // Ext.define
                         if (node.expression.callee.property.name === 'define') {
+                            const extClassMeta = new ExtClassMeta({name: node.expression.arguments[0].value})
+                            definedClasses.push(extClassMeta);
                             const props = node.expression.arguments[1].properties;
                             props?.forEach(prop => {
+                                // alias
+                                if (prop.key.name === 'alias') {
+                                    extClassMeta.alias = prop.value.value;
+                                }
+                                // alternateClassName
+                                if (prop.key.name === 'alternateClassName') {
+                                    extClassMeta.alternateNames = propToArray(prop.value);
+                                }
                                 // extend, override
                                 if (['extend', 'override'].includes(prop.key.name)) {
-                                    extend.push(prop.value.value);
+                                    extClassMeta[prop.key.name] = prop.value.value;
                                     if (options.replaceCallParent === true) {
-                                        callParentNodes = findCallParent(code, node, prop.value.value, prop.key.name === 'override');
+                                        callParentNodes = callParentNodes.concat(findCallParent(code, node, prop.value.value, prop.key.name === 'override'));
                                     }
                                 }
-                                // uses, requires, override, mixins
-                                if (['uses', 'requires', 'override', 'mixins'].includes(prop.key.name)) {
-                                    if (prop.value.type === 'ArrayExpression') {
-                                        prop.value.elements.forEach(el => {
-                                            uses.push(el.value);
-                                        });
-                                    } else if (prop.value.type === 'Literal') {
-                                        uses.push(prop.value.value);
-                                    }
+                                // uses, requires, mixins
+                                if (['uses', 'requires', 'mixins'].includes(prop.key.name)) {
+                                    // TODO mixins can be object
+                                    extClassMeta[prop.key.name] = propToArray(prop.value);
                                 }
                             });
                         }
                     }
                 },
             });
-            const imports = [...extend, ...uses, ...requires];
-            let importStr = '';
-            for (const module of imports) {
-                const paths = await resolve(mappings, module);
-                for (const path of paths) {
-                    if (path) {
-                        const realPath = realpath(path);
-                        if (!existingImports.includes(realPath) && !existingImports.includes(`${realPath}.js`)) {
-                            importStr += `import '${path}.js';\n`;
-                            existingImports.push(realPath);
-                        }
-                    }
-                }
-
+            if (!definedClasses.length) {
+                return MODE === 'production' ? {code} : {code, ast};
             }
             let originalCode = code;
-            if (options.replaceCallParent === true && callParentNodes && callParentNodes.length) {
+            if (options.replaceCallParent === true && callParentNodes.length) {
                 callParentNodes.reverse().forEach(({node, replacement}) => {
                     code = replaceCode(code, node, replacement);
                 });
             }
-            if (importStr.length) {
-                code = `/*** <${PLUGIN_NAME}> ***/\n${importStr}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
+            let importString = '';
+            for (const definedClass of definedClasses) {
+                classMap.set(definedClass.name, definedClass);
+                if (definedClass.alternateNames.length) {
+                    definedClass.alternateNames.forEach(name => {
+                        classAlternateNames.set(name, definedClass.name);
+                    });
+                }
+                await resolveClassImports(mappings, definedClass, importsMap, classAlternateNames);
+                if (definedClass.imports.length) {
+                    importString += `${definedClass.getImportString()}`;
+                }
+            }
+            if (importString.length) {
+                code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
             if (MODE === 'production') {
                 return {code};

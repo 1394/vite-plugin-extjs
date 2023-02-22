@@ -1,7 +1,5 @@
 Ext.define('Some.more.DependentModule', {
-    extend: 'Ext.panel.Panel',
-    requires: [],
-    uses: [],
+    extend: 'SigmaUtilities.view.common.component.ForeignSelectWindow',
     constructor() {
         console.log('DependentModule');
     }
