@@ -3,6 +3,7 @@ import fg from 'fast-glob';
 import nodePath from 'node:path';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
+let DEBUG = false;
 
 async function resolveClassImports(mappings, classMeta, importsMap, classAlternateNames) {
     const imports = [
@@ -22,6 +23,7 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
                 if (Array.isArray(importsMap)) {
                     if (!importsMap.includes(realPath) && !importsMap.includes(`${realPath}.js`)) {
                         importsMap.push(realPath);
+                        DEBUG && console.log('\x1b[33m%s\x1b[0m', `[${PLUGIN_NAME}] ${classMeta.name} imports ${className}. PATH: ${path}`);
                     } else {
                         include = false;
                     }
@@ -73,7 +75,7 @@ async function resolve(mappings, className, requiredBy, classAlternateNames = {}
             }
         }
     }
-    if(!path){
+    if (!path) {
         console.log('\x1b[33m%s\x1b[0m', `[${PLUGIN_NAME}] '${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
     }
     return Array.isArray(path) ? path : [path];
@@ -178,12 +180,18 @@ class ExtClassMeta extends ExtClassProps {
     }
 }
 
-const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) => {
+class ExtFileMeta {
+    definedClasses = [];
+    callParentNodes = [];
+    existingImports = [];
+}
+
+const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug = false}) => {
     let MODE;
     let ENTRY;
+    DEBUG = debug;
     const classMap = new Map();
     const classAlternateNames = {};
-    const importsMap = [];
     return {
         name: PLUGIN_NAME,
         config(config, {mode}) {
@@ -193,18 +201,19 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
         async transform(code, id) {
             typeof ENTRY === 'undefined' && (ENTRY = id);
             if (!mappings || id.endsWith('.css') || id.endsWith('.html') || id.endsWith('?direct')) {
-                return {code};
+                return;
             }
             // Check if is Vite file
             if (id.includes('node_modules/.vite') || id.includes('vite@')) {
-                return {code};
+                return;
             }
             const ast = this.parse(code);
+            const existingImports = [];
             let callParentNodes = [];
             const definedClasses = [];
             simple(ast, {
                 ImportDeclaration(node) {
-                    importsMap.push(realpath(node.source.value));
+                    existingImports.push(realpath(node.source.value));
                 },
                 ExpressionStatement: (node) => {
                     if (node.expression.callee?.object?.name === 'Ext') {
@@ -225,7 +234,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
                                 // extend, override
                                 if (['extend', 'override'].includes(prop.key.name)) {
                                     extClassMeta[prop.key.name] = prop.value.value;
-                                    if (options.replaceCallParent === true) {
+                                    if (replaceCallParent === true) {
                                         callParentNodes = callParentNodes.concat(findCallParent(code, node, prop.value.value, prop.key.name === 'override'));
                                     }
                                 }
@@ -243,7 +252,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
                 return MODE === 'production' ? {code} : {code, ast};
             }
             let originalCode = code;
-            if (options.replaceCallParent === true && callParentNodes.length) {
+            if (replaceCallParent === true && callParentNodes.length) {
                 callParentNodes.reverse().forEach(({node, replacement}) => {
                     code = replaceCode(code, node, replacement);
                 });
@@ -256,7 +265,7 @@ const viteImportExtjsRequires = (mappings, options = {replaceCallParent: true}) 
                         classAlternateNames[name] = definedClass.name;
                     });
                 }
-                await resolveClassImports(mappings, definedClass, importsMap, classAlternateNames);
+                await resolveClassImports(mappings, definedClass, existingImports, classAlternateNames);
                 if (definedClass.imports.length) {
                     importString += `${definedClass.getImportString()}`;
                 }

@@ -5,10 +5,14 @@ export default {
         force: true,
     },
     plugins: [
-        viteImportExtjsRequires({
-            Some: '/test/lib/Some/src',
-            overrides: '/test/lib/overrides',
-            Ext: false
-        })
+        viteImportExtjsRequires(
+            {
+                mappings: {
+                    Some: '/test/lib/Some/src',
+                    overrides: '/test/lib/overrides',
+                    Ext: false
+                }
+            }
+        )
     ]
 }
