@@ -76,7 +76,7 @@ async function resolve(mappings, className, requiredBy, classAlternateNames = {}
         }
     }
     if (!path) {
-        console.log('\x1b[33m%s\x1b[0m', `[${PLUGIN_NAME}] '${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
+        console.log('\x1b[33m%s\x1b[0m', `\n[${PLUGIN_NAME}] '${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
     }
     return Array.isArray(path) ? path : [path];
 }
