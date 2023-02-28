@@ -1,7 +1,7 @@
 {
   "name": "vite-plugin-extjs",
   "private": true,
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "module",
   "keywords": ["vite-plugin"],
   "scripts": {

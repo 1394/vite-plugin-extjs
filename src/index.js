@@ -23,7 +23,7 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
                 if (Array.isArray(importsMap)) {
                     if (!importsMap.includes(realPath) && !importsMap.includes(`${realPath}.js`)) {
                         importsMap.push(realPath);
-                        DEBUG && console.log('\x1b[33m%s\x1b[0m', `[${PLUGIN_NAME}] ${classMeta.name} imports ${className}. PATH: ${path}`);
+                        DEBUG && warn(`${classMeta.name} imports ${className}. PATH: ${path}`);
                     } else {
                         include = false;
                     }
@@ -47,6 +47,17 @@ async function resolve(mappings, className, requiredBy, classAlternateNames = {}
     if (mappings[namespace] === false) {
         return [];
     }
+    if (typeof classAlternateNames === 'object') {
+        let realClassName;
+        for (const key in classAlternateNames) {
+            if (key === className) {
+                realClassName = classAlternateNames[key];
+            }
+        }
+        if (realClassName) {
+            return await resolve(mappings, realClassName, requiredBy, classAlternateNames);
+        }
+    }
     if (mappings[namespace]) {
         path = [mappings[namespace]].concat(classParts).join('/');
     }
@@ -63,20 +74,7 @@ async function resolve(mappings, className, requiredBy, classAlternateNames = {}
         });
     }
     if (!path) {
-        if (typeof classAlternateNames === 'object') {
-            let realClassName;
-            for (const key in classAlternateNames) {
-                if (key === className) {
-                    realClassName = classAlternateNames[key];
-                }
-            }
-            if (realClassName) {
-                return await resolve(mappings, realClassName, requiredBy, classAlternateNames);
-            }
-        }
-    }
-    if (!path) {
-        console.log('\x1b[33m%s\x1b[0m', `\n[${PLUGIN_NAME}] '${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
+        warn(`'${namespace}' namespace is not mapped. [${requiredBy} requires ${className}]`);
     }
     return Array.isArray(path) ? path : [path];
 }
@@ -155,6 +153,10 @@ function findCallParent(code, node, className, isOverride) {
         }
     });
     return matches;
+}
+
+function warn(msg) {
+    console.log('\x1b[33m%s\x1b[0m', `\n[${PLUGIN_NAME}] ${msg}`);
 }
 
 class ExtClassProps {
