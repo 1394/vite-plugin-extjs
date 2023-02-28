@@ -1,6 +1,7 @@
 import {simple} from 'acorn-walk';
 import fg from 'fast-glob';
 import nodePath from 'node:path';
+import pc from 'picocolors';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
 let DEBUG = false;
@@ -156,7 +157,8 @@ function findCallParent(code, node, className, isOverride) {
 }
 
 function warn(msg) {
-    console.log('\x1b[33m%s\x1b[0m', `\n[${PLUGIN_NAME}] ${msg}`);
+    console.log();
+    console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.yellow(msg)}`);
 }
 
 class ExtClassProps {

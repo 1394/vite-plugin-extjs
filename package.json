@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.9",
   "type": "module",
-  "keywords": ["vite-plugin"],
+  "keywords": [
+    "vite-plugin"
+  ],
   "scripts": {
     "dev": "vite --force",
     "build": "vite build",
@@ -16,7 +18,8 @@
   },
   "dependencies": {
     "acorn-walk": "^8.2.0",
-    "fast-glob": "^3.2.12"
+    "fast-glob": "^3.2.12",
+    "picocolors": "^1.0.0"
   },
   "devDependencies": {
     "vite": "^4.1.0"
