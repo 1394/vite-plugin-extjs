@@ -151,20 +151,20 @@ function findCallParent(code, node, className, isOverride) {
     return matches;
 }
 
-function warn(msg, force = false) {
-    if ((!DEBUG && !force) || !DEBUG.warn) {
+function warn(msg) {
+    if ((typeof DEBUG === 'boolean' && !DEBUG) || (DEBUG !== true && !DEBUG.warn)) {
         return;
     }
     MODE === 'production' && console.log();
-    console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.yellow(msg)}`);
+    console.log(`${pc.yellow(`[${PLUGIN_NAME}]`)} ${msg}`);
 }
 
-function log(msg, force = false) {
-    if ((!DEBUG && !force) || !DEBUG.log) {
+function log(msg) {
+    if ((typeof DEBUG === 'boolean' && !DEBUG) || (DEBUG !== true && !DEBUG.log)) {
         return;
     }
     MODE === 'production' && console.log();
-    console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.green(msg)}`);
+    console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${msg}`);
 }
 
 function isInMappings(id, mappings = {}) {

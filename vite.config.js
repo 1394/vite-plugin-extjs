@@ -12,6 +12,7 @@ export default {
                     overrides: '/test/lib/overrides',
                     Ext: false
                 },
+                include: ['test/Application.js'],
                 debug: true
             }
         )
