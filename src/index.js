@@ -35,12 +35,6 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
     }
 }
 
-/**
- * @param {object} mappings
- * @param {string} className
- * @param {string} requiredBy
- * @param {object} classAlternateNames
- */
 async function resolve(mappings, className, requiredBy, classAlternateNames = {}) {
     const classParts = className.split('.');
     const namespace = classParts.shift();
@@ -161,6 +155,21 @@ function warn(msg) {
     console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.yellow(msg)}`);
 }
 
+function log(msg) {
+    console.log();
+    console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.green(msg)}`);
+}
+
+function shouldSkip(id, mappings = {}, exclude = []) {
+    return exclude.some(pattern => new RegExp(pattern).test(id)) ||
+        !Object.values(mappings).filter(Boolean).some(path => id.includes(path)) ||
+        id.endsWith('.css') ||
+        id.endsWith('.html') ||
+        id.endsWith('?direct') ||
+        id.includes('node_modules/.vite') ||
+        id.includes('vite@');
+}
+
 class ExtClassProps {
     name = '';
     alias = '';
@@ -190,7 +199,7 @@ class ExtFileMeta {
     existingImports = [];
 }
 
-const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug = false}) => {
+const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug = false, exclude = []}) => {
     let MODE;
     let ENTRY;
     DEBUG = debug;
@@ -204,13 +213,10 @@ const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug
         },
         async transform(code, id) {
             typeof ENTRY === 'undefined' && (ENTRY = id);
-            if (!mappings || id.endsWith('.css') || id.endsWith('.html') || id.endsWith('?direct')) {
+            if (!mappings || shouldSkip(id, mappings, exclude)) {
                 return;
             }
-            // Check if is Vite file
-            if (id.includes('node_modules/.vite') || id.includes('vite@')) {
-                return;
-            }
+            DEBUG && log(`analyzing: ${id}`);
             const ast = this.parse(code);
             const existingImports = [];
             let callParentNodes = [];
