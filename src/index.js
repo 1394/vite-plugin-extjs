@@ -24,7 +24,7 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
                 if (Array.isArray(importsMap)) {
                     if (!importsMap.includes(realPath) && !importsMap.includes(`${realPath}.js`)) {
                         importsMap.push(realPath);
-                        DEBUG && warn(`${classMeta.name} imports ${className}. PATH: ${path}`);
+                        warn(`${classMeta.name} imports ${className}. PATH: ${path}`);
                     } else {
                         include = false;
                     }
@@ -150,24 +150,33 @@ function findCallParent(code, node, className, isOverride) {
     return matches;
 }
 
-function warn(msg) {
+function warn(msg, force = false) {
+    if (!DEBUG && !force) {
+        return;
+    }
     console.log();
     console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.yellow(msg)}`);
 }
 
-function log(msg) {
+function log(msg, force = false) {
+    if (!DEBUG && !force) {
+        return;
+    }
     console.log();
     console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${pc.green(msg)}`);
 }
 
 function shouldSkip(id, mappings = {}, exclude = []) {
-    return exclude.some(pattern => new RegExp(pattern).test(id)) ||
-        !Object.values(mappings).filter(Boolean).some(path => id.includes(path)) ||
-        id.endsWith('.css') ||
-        id.endsWith('.html') ||
-        id.endsWith('?direct') ||
-        id.includes('node_modules/.vite') ||
-        id.includes('vite@');
+    const checks = [
+        exclude.some(pattern => new RegExp(pattern).test(id)),
+        // !Object.values(mappings).filter(Boolean).some(path => id.includes(path)),
+        id.endsWith('.css'),
+        id.endsWith('.html'),
+        id.endsWith('?direct'),
+        id.includes('node_modules/.vite'),
+        id.includes('vite@'),
+    ];
+    return checks.some(Boolean);
 }
 
 class ExtClassProps {
@@ -201,8 +210,8 @@ class ExtFileMeta {
 
 const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug = false, exclude = []}) => {
     let MODE;
-    let ENTRY;
     DEBUG = debug;
+    const isDefinedMappings = typeof mappings === 'object' && Object.values(mappings).length > 0;
     const classMap = new Map();
     const classAlternateNames = {};
     return {
@@ -212,11 +221,15 @@ const viteImportExtjsRequires = ({mappings = {}, replaceCallParent = true, debug
             // TODO check mappings - error if path is not exists
         },
         async transform(code, id) {
-            typeof ENTRY === 'undefined' && (ENTRY = id);
-            if (!mappings || shouldSkip(id, mappings, exclude)) {
+            if (!isDefinedMappings) {
+                warn(`No mappings defined.`);
                 return;
             }
-            DEBUG && log(`analyzing: ${id}`);
+            if (shouldSkip(id, mappings, exclude)) {
+                warn(`skipping: ${id}`);
+                return;
+            }
+            log(`analyzing: ${id}`);
             const ast = this.parse(code);
             const existingImports = [];
             let callParentNodes = [];

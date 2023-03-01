@@ -11,7 +11,8 @@ export default {
                     Some: '/test/lib/Some/src',
                     overrides: '/test/lib/overrides',
                     Ext: false
-                }
+                },
+                debug: true
             }
         )
     ]
