@@ -7,6 +7,7 @@ import pc from 'picocolors';
 const PLUGIN_NAME = 'vite-plugin-extjs';
 let DEBUG = false;
 let MODE;
+let AUTO_IMPORT_SASS = false;
 
 async function resolveClassImports(mappings, classMeta, importsMap, classAlternateNames) {
     const imports = [
@@ -33,10 +34,12 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
                 }
                 if (include) {
                     classMeta.imports.push(path);
-                    try {
-                        accessSync(`${realPath}.scss`, constants.R_OK);
-                        classMeta.imports.push(`${path}.scss`);
-                    } catch (err) {
+                    if (AUTO_IMPORT_SASS) {
+                        try {
+                            accessSync(`${realPath}.scss`, constants.R_OK);
+                            classMeta.imports.push(`${path}.scss`);
+                        } catch (err) {
+                        }
                     }
                 }
 
@@ -240,8 +243,10 @@ const viteImportExtjsRequires = (
         debug = false,
         exclude = [],
         include = [],
+        autoImportSass = false
     }) => {
     DEBUG = typeof debug === 'object' ? (Object.keys(debug).length && debug) || false : debug;
+    AUTO_IMPORT_SASS = autoImportSass;
     const isDefinedMappings = typeof mappings === 'object' && Object.values(mappings).length > 0;
     const classMap = new Map();
     const classAlternateNames = {};
