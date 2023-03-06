@@ -4,7 +4,7 @@ Ext.define('Some.multiple.defined.Module', {
         this.callParent();
     }
 });
-Ext.define('Some.ext.Module', {
+Ext.define('Some.Application', {
     extend: 'Some.other.BaseModule',
     alias: 'widget.module',
     requires: [

@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-extjs",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "type": "module",
   "keywords": [
     "vite-plugin"
@@ -9,7 +9,7 @@
     "dev": "vite --force",
     "build": "vite build",
     "preview": "vite preview",
-    "publish": "npm publish --registry https://nxs.sigma-it.ru/repository/npm-sigma-release/"
+    "publish": "npm publish"
   },
   "exports": {
     ".": {
@@ -19,9 +19,13 @@
   "dependencies": {
     "acorn-walk": "^8.2.0",
     "fast-glob": "^3.2.12",
-    "picocolors": "^1.0.0"
+    "picocolors": "^1.0.0",
+    "sass": "^1.58.3"
   },
   "devDependencies": {
     "vite": "^4.1.0"
+  },
+  "publishConfig": {
+    "registry": "https://nxs.sigma-it.ru/repository/npm-sigma-release/"
   }
 }

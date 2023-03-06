@@ -1,6 +1,7 @@
 import {simple} from 'acorn-walk';
 import fg from 'fast-glob';
 import nodePath from 'node:path';
+import {accessSync, constants} from 'node:fs';
 import pc from 'picocolors';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
@@ -30,7 +31,15 @@ async function resolveClassImports(mappings, classMeta, importsMap, classAlterna
                         include = false;
                     }
                 }
-                include && classMeta.imports.push(path);
+                if (include) {
+                    classMeta.imports.push(path);
+                    try {
+                        accessSync(`${realPath}.scss`, constants.R_OK);
+                        classMeta.imports.push(`${path}.scss`);
+                    } catch (err) {
+                    }
+                }
+
             }
         }
     }
@@ -175,6 +184,7 @@ function shouldSkip(id, mappings = {}, exclude = []) {
     const checks = [
         exclude.some(pattern => new RegExp(pattern).test(id)),
         id.endsWith('.css'),
+        id.endsWith('.scss'),
         id.endsWith('.html'),
         id.endsWith('?direct'),
         id.includes('node_modules/.vite'),
@@ -202,7 +212,7 @@ class ExtClassMeta extends ExtClassProps {
     }
 
     getImportString() {
-        return this.imports.reduce((str, path) => `${str}import '${path}.js';\n`, '');
+        return this.imports.reduce((str, path) => `${str}import '${path}${path.endsWith('.scss') ? '' : '.js'}';\n`, '');
     }
 }
 
@@ -311,6 +321,7 @@ const viteImportExtjsRequires = (
                 }
             }
             if (importString.length) {
+                console.log(importString);
                 code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
             if (MODE === 'production') {
