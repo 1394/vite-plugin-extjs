@@ -176,19 +176,30 @@ function log(msg) {
     console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${msg}`);
 }
 
+function error(msg, ...rest) {
+    MODE === 'production' && console.log();
+    console.log(`${pc.red(`[${PLUGIN_NAME}]`)} ${msg}`, ...rest);
+}
+
 function isInMappings(id, mappings = {}) {
     return Object.values(mappings).filter(Boolean).some(path => id.includes(path))
 }
 
-function shouldSkip(id, mappings = {}, exclude = []) {
+function alwaysSkip(id) {
     const checks = [
-        exclude.some(pattern => new RegExp(pattern).test(id)),
         id.endsWith('.css'),
         id.endsWith('.scss'),
         id.endsWith('.html'),
         id.endsWith('?direct'),
         id.includes('node_modules/.vite'),
         id.includes('vite@'),
+    ];
+    return checks.some(Boolean);
+}
+
+function shouldSkip(id, exclude = []) {
+    const checks = [
+        exclude.some(pattern => new RegExp(pattern).test(id)),
     ];
     return checks.some(Boolean);
 }
@@ -241,7 +252,7 @@ const viteImportExtjsRequires = (
             // TODO check mappings - error if path is not exists
         },
         async transform(code, id) {
-            if (!isDefinedMappings) {
+            if (!isDefinedMappings || alwaysSkip(id)) {
                 warn(`No mappings defined.`);
                 return;
             }
@@ -251,13 +262,19 @@ const viteImportExtjsRequires = (
                     warn(`Path is not mapped: [${id}]`);
                     return;
                 }
-                if (shouldSkip(id, mappings, exclude)) {
+                if (shouldSkip(id, exclude)) {
                     warn(`skipping: ${id}`);
                     return;
                 }
             }
             log(`analyzing: ${id}`);
-            const ast = this.parse(code);
+            let ast;
+            try {
+                ast = this.parse(code);
+            } catch (e) {
+                error(e.message, id);
+                return;
+            }
             const existingImports = [];
             let callParentNodes = [];
             const definedClasses = [];
