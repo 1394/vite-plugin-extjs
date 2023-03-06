@@ -321,7 +321,6 @@ const viteImportExtjsRequires = (
                 }
             }
             if (importString.length) {
-                console.log(importString);
                 code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
             if (MODE === 'production') {
