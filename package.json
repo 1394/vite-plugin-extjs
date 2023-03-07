@@ -16,13 +16,13 @@
       "import": "./src/index.js"
     }
   },
-  "dependencies": {
+  "devDependencies": {
     "acorn-walk": "^8.2.0",
+    "extjs-code-analyzer": "link:..\\test",
     "fast-glob": "^3.2.12",
     "picocolors": "^1.0.0",
-    "sass": "^1.58.3"
-  },
-  "devDependencies": {
+    "ru.coon": "^2.2.1",
+    "sass": "^1.58.3",
     "vite": "^4.1.0"
   },
   "publishConfig": {

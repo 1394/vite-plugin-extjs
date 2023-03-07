@@ -8,7 +8,7 @@ Ext.define('Some.Application', {
     extend: 'Some.other.BaseModule',
     alias: 'widget.module',
     requires: [
-        'Some.*',
+        'Coon.*',
     ],
     test01: function () {
         this.callParent();
