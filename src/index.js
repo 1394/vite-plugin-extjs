@@ -1,10 +1,10 @@
-import fg from "fast-glob";
-import nodePath from "node:path";
-import { access, readFile, constants } from "node:fs/promises";
-import pc from "picocolors";
-import { ExtAnalyzer } from "extjs-code-analyzer";
+import fg from 'fast-glob';
+import nodePath from 'node:path';
+import { access, readFile, constants } from 'node:fs/promises';
+import pc from 'picocolors';
+import { ExtAnalyzer } from 'extjs-code-analyzer';
 
-const PLUGIN_NAME = "vite-plugin-extjs";
+const PLUGIN_NAME = 'vite-plugin-extjs';
 let DEBUG = false;
 let MODE;
 let AUTO_IMPORT_SASS = false;
@@ -67,13 +67,13 @@ async function resolve(
     requiredBy,
     classAlternateNames = {}
 ) {
-    const classParts = className.split(".");
+    const classParts = className.split('.');
     const namespace = classParts.shift();
     let path;
     if (mappings[namespace] === false) {
         return [];
     }
-    if (typeof classAlternateNames === "object") {
+    if (typeof classAlternateNames === 'object') {
         let realClassName;
         for (const key in classAlternateNames) {
             if (key === className) {
@@ -90,15 +90,15 @@ async function resolve(
         }
     }
     if (mappings[namespace]) {
-        path = [mappings[namespace]].concat(classParts).join("/");
+        path = [mappings[namespace]].concat(classParts).join('/');
     }
-    if (path && path.includes("*")) {
-        const cwd = process.cwd().replace(/\\/g, "/");
-        const realPath = cwd + path.replace("*", "**/*.js");
+    if (path && path.includes('*')) {
+        const cwd = process.cwd().replace(/\\/g, '/');
+        const realPath = cwd + path.replace('*', '**/*.js');
         const realPaths = await fg(realPath);
         path = realPaths.map((realPath) => {
-            realPath = realPath.replace(cwd, "");
-            if (realPath.endsWith(".js")) {
+            realPath = realPath.replace(cwd, '');
+            if (realPath.endsWith('.js')) {
                 realPath = realPath.slice(0, -3);
             }
             return realPath;
@@ -113,10 +113,10 @@ async function resolve(
 }
 
 function realpath(path) {
-    return nodePath.normalize(process.cwd() + "\\" + path).replace(/\\/g, "/");
+    return nodePath.normalize(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
 
-function replaceCode(code, node, replacement = "") {
+function replaceCode(code, node, replacement = '') {
     let transformedCode = code.slice(0, node.start);
     transformedCode += replacement;
     transformedCode += code.slice(node.end);
@@ -125,28 +125,28 @@ function replaceCode(code, node, replacement = "") {
 
 function warn(msg) {
     if (
-        (typeof DEBUG === "boolean" && !DEBUG) ||
+        (typeof DEBUG === 'boolean' && !DEBUG) ||
         (DEBUG !== true && !DEBUG.warn)
     ) {
         return;
     }
-    MODE === "production" && console.log();
+    MODE === 'production' && console.log();
     console.log(`${pc.yellow(`[${PLUGIN_NAME}]`)} ${msg}`);
 }
 
 function log(msg) {
     if (
-        (typeof DEBUG === "boolean" && !DEBUG) ||
+        (typeof DEBUG === 'boolean' && !DEBUG) ||
         (DEBUG !== true && !DEBUG.log)
     ) {
         return;
     }
-    MODE === "production" && console.log();
+    MODE === 'production' && console.log();
     console.log(`${pc.cyan(`[${PLUGIN_NAME}]`)} ${msg}`);
 }
 
 function error(msg, ...rest) {
-    MODE === "production" && console.log();
+    MODE === 'production' && console.log();
     console.log(`${pc.red(`[${PLUGIN_NAME}]`)} ${msg}`, ...rest);
 }
 
@@ -158,12 +158,12 @@ function isInMappings(id, mappings = {}) {
 
 function alwaysSkip(id) {
     const checks = [
-        id.endsWith(".css"),
-        id.endsWith(".scss"),
-        id.endsWith(".html"),
-        id.endsWith("?direct"),
-        id.includes("node_modules/.vite"),
-        id.includes("vite@"),
+        id.endsWith('.css'),
+        id.endsWith('.scss'),
+        id.endsWith('.html'),
+        id.endsWith('?direct'),
+        id.includes('node_modules/.vite'),
+        id.includes('vite@'),
     ];
     return checks.some(Boolean);
 }
@@ -181,7 +181,7 @@ const viteImportExtjsRequires = ({
     autoImportSass = false,
 }) => {
     DEBUG =
-        typeof debug === "object"
+        typeof debug === 'object'
             ? (Object.keys(debug).length && debug) || false
             : debug;
     AUTO_IMPORT_SASS = autoImportSass;
@@ -200,9 +200,9 @@ const viteImportExtjsRequires = ({
                         console.time(
                             `[ExtAnalyzer] Analyzed "${namespace}" in`
                         );
-                        const paths = await fg(realPath + "/**/*.js");
+                        const paths = await fg(realPath + '/**/*.js');
                         for (const path of paths) {
-                            if (!path.endsWith(".js")) {
+                            if (!path.endsWith('.js')) {
                                 continue;
                             }
                             const mustInclude =
@@ -239,6 +239,7 @@ const viteImportExtjsRequires = ({
                 include.length &&
                 include.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
+                // TODO check via ExtAnalyzer.classManager
                 if (!isInMappings(id, mappings)) {
                     warn(`Path is not mapped: [${id}]`);
                     return;
@@ -257,46 +258,24 @@ const viteImportExtjsRequires = ({
                 });
             }
             const importPaths = fileMeta.getResolvedImportPaths();
-            console.log(importPaths);
-            // const fileMeta = ExtAnalyzer.getFile(id) || ;
-            // fileMeta.resolvedImports === undefined && ExtAnalyzer.resolveImports()
-            /*let ast;
-            try {
-                ast = ExtAnalyzer.analyze(code, id);
-            } catch (e) {
-                error(e.message, id);
+            if (!importPaths.length) {
                 return;
             }
-            if (!definedClasses.length) {
-                return MODE === 'production' ? {code} : {code, ast};
-            }
             let originalCode = code;
-            if (replaceCallParent === true && callParentNodes.length) {
-                callParentNodes.reverse().forEach(({node, replacement}) => {
+            //TODO replace codeTransform
+            /*if (replaceCallParent === true && callParentNodes.length) {
+                callParentNodes.reverse().forEach(({ node, replacement }) => {
                     code = replaceCode(code, node, replacement);
                 });
-            }
+            }*/
             let importString = '';
-            for (const definedClass of definedClasses) {
-                // classMap.set(definedClass.name, definedClass);
-                if (definedClass.alternateNames.length) {
-                    definedClass.alternateNames.forEach(name => {
-                        classAlternateNames[name] = definedClass.name;
-                    });
-                }
-                await resolveClassImports(mappings, definedClass, existingImports, classAlternateNames);
-                if (definedClass.imports.length) {
-                    importString += `${definedClass.getImportString()}`;
-                }
-            }
+            importPaths.forEach((path) => {
+                importString += `import '${path}';\n`;
+            });
             if (importString.length) {
-                code = `/!*** <${PLUGIN_NAME}> ***!/\n${importString}/!*** </${PLUGIN_NAME}> ***!/\n\n${code}`;
+                code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
             }
-            if (MODE === 'production') {
-                return {code};
-            }
-            const isChangedCode = (originalCode === code);
-            return {code, ast: isChangedCode ? undefined : ast};*/
+            return { code };
         },
     };
 };
