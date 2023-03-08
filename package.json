@@ -21,6 +21,7 @@
     "extjs-code-analyzer": "link:..\\test",
     "fast-glob": "^3.2.12",
     "picocolors": "^1.0.0",
+    "prettier": "^2.8.4",
     "ru.coon": "^2.2.1",
     "sass": "^1.58.3",
     "vite": "^4.1.0"
