@@ -2,12 +2,12 @@ Ext.define('Some.multiple.defined.Module', {
     extend: 'Some.other.RequiredModule',
     multipleFn() {
         this.callParent();
-    }
+    },
 });
 Ext.define('Some.Application', {
     extend: 'Some.other.BaseModule',
     alias: 'widget.module',
-    requires: [],
+    requires: ['Some.*'],
     test01: function () {
         this.callParent();
     },
@@ -18,7 +18,7 @@ Ext.define('Some.Application', {
         this.callParent([arg]);
     },
     test04: function (arg) {
-        const variable = {arg};
+        const variable = { arg };
         this.callParent([variable]);
     },
     test05: function (arg) {
