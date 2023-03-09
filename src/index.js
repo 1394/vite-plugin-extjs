@@ -56,7 +56,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                             const mustInclude = include.length && include.some((pattern) => path.includes(pattern));
                             if (!mustInclude) {
                                 if (shouldSkip(path, exclude)) {
-                                    Logger.warn(`Skipping: ${path}`);
+                                    Logger.warn(`- Skipping: ${path}`);
                                     continue;
                                 }
                             }
@@ -68,7 +68,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                         }
                         console.timeEnd(timeLabel);
                     } catch (e) {
-                        Logger.warn(e.message, e.stack);
+                        Logger.warn(e.message);
                     }
                 }
             }
@@ -76,21 +76,21 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
         },
         async transform(code, id) {
             if (alwaysSkip(id)) {
-                Logger.log(`Ignoring: ${id}`);
+                Logger.warn(`- Ignoring: ${id}`);
                 return;
             }
             const mustInclude = include.length && include.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
                 if (typeof ExtAnalyzer.fileMap[id] !== 'object') {
-                    Logger.warn(`Path is not mapped: [${id}]`);
+                    Logger.warn(`- Ignoring(not mapped): ${id}`);
                     return;
                 }
                 if (shouldSkip(id, exclude)) {
-                    Logger.warn(`Skipping: ${id}`);
+                    Logger.warn(` - Skipping: ${id}`);
                     return;
                 }
             }
-            Logger.log(`Analyzing: ${id}`);
+            Logger.log(`+ Analyzing: ${id}`);
             let fileMeta;
             try {
                 fileMeta = ExtAnalyzer.getFile(id) || ExtAnalyzer.analyze(code, id, true);
