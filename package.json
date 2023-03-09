@@ -17,7 +17,6 @@
     }
   },
   "devDependencies": {
-    "acorn-walk": "^8.2.0",
     "extjs-code-analyzer": "link:..\\test",
     "fast-glob": "^3.2.12",
     "picocolors": "^1.0.0",

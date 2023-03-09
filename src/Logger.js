@@ -48,7 +48,7 @@ export class Logger {
         this.echo(msg, 'warn', ...rest);
     }
 
-    static log(msg, ...rest) {
+    static info(msg, ...rest) {
         this.echo(msg, 'log', ...rest);
     }
 

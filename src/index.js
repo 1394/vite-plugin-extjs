@@ -1,5 +1,5 @@
 import fg from 'fast-glob';
-import nodePath from 'node:path';
+import { normalizePath } from 'vite';
 import { access, readFile, constants } from 'node:fs/promises';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer';
@@ -10,7 +10,7 @@ let DEBUG = false;
 let MODE;
 
 function realpath(path) {
-    return nodePath.normalize(process.cwd() + '\\' + path).replace(/\\/g, '/');
+    return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
 
 function alwaysSkip(id) {
@@ -36,16 +36,19 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
+        async buildStart(options) {
+            // TODO get acorn parse || parse options
+        },
         async config(config, { mode }) {
             MODE = mode;
             for (const namespace in mappings) {
                 const basePath = mappings[namespace];
                 if (basePath) {
-                    Logger.log(`Resolving namespace "${namespace}"...`);
+                    Logger.info(`Resolving namespace "${namespace}"...`);
                     try {
                         const realPath = realpath(basePath);
                         await access(realPath, constants.R_OK);
-                        Logger.log(`Resolved: ${realPath}`);
+                        Logger.info(`Resolved: ${realPath}`);
                         const timeLabel = `${pc.cyan('[ExtAnalyzer]')} Analyzed "${namespace}" in`;
                         console.time(timeLabel);
                         const paths = await fg(realPath + '/**/*.js');
@@ -75,13 +78,14 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             ExtAnalyzer.classManager.resolveImports();
         },
         async transform(code, id) {
-            if (alwaysSkip(id)) {
+            const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
+            if (alwaysSkip(cleanId)) {
                 Logger.warn(`- Ignoring: ${id}`);
                 return;
             }
             const mustInclude = include.length && include.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
-                if (typeof ExtAnalyzer.fileMap[id] !== 'object') {
+                if (typeof ExtAnalyzer.fileMap[cleanId] !== 'object') {
                     Logger.warn(`- Ignoring(not mapped): ${id}`);
                     return;
                 }
@@ -90,10 +94,10 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                     return;
                 }
             }
-            Logger.log(`+ Analyzing: ${id}`);
+            Logger.info(`+ Analyzing: ${id}`);
             let fileMeta;
             try {
-                fileMeta = ExtAnalyzer.getFile(id) || ExtAnalyzer.analyze(code, id, true);
+                fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
             } catch (e) {
                 Logger.error(e.message, e.stack);
                 return;

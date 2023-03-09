@@ -7,7 +7,7 @@ Ext.define('Some.multiple.defined.Module', {
 Ext.define('Some.Application', {
     extend: 'Some.other.BaseModule',
     alias: 'widget.module',
-    requires: ['Some.*'],
+    requires: ['Coon.nav.AppNavigationBar'],
     test01: function () {
         this.callParent();
     },
