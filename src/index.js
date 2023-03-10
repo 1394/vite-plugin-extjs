@@ -95,24 +95,25 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                 }
             }
             Logger.info(`+ Analyzing: ${id}`);
-            let fileMeta;
-            try {
-                fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
-            } catch (e) {
-                Logger.error(e.message, e.stack);
-                return;
+            const fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
+            code = fileMeta.applyCodeTransforms(code);
+            if (fileMeta.isImportsInjected) {
+                Logger.warn('- Imports already injected. Skipping.');
+                return { code };
             }
             const importPaths = fileMeta.getImportsPaths();
             if (!importPaths.length) {
-                return;
+                Logger.info('- Empty import paths');
+                return { code };
             }
-            code = fileMeta.getTransformedCode();
             let importString = '';
             importPaths.forEach((path) => {
                 importString += `import '${path}';\n`;
             });
             if (importString.length) {
-                code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
+                fileMeta.code =
+                    code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
+                fileMeta.isImportsInjected = true;
             }
             return { code };
         },

@@ -1,31 +1,31 @@
 {
-  "name": "vite-plugin-extjs",
-  "version": "0.0.15",
-  "type": "module",
-  "keywords": [
-    "vite-plugin"
-  ],
-  "scripts": {
-    "dev": "vite --force",
-    "build": "vite build",
-    "preview": "vite preview",
-    "publish": "npm publish"
-  },
-  "exports": {
-    ".": {
-      "import": "./src/index.js"
+    "name": "vite-plugin-extjs",
+    "version": "0.0.15",
+    "type": "module",
+    "keywords": [
+        "vite-plugin"
+    ],
+    "scripts": {
+        "dev": "vite --force",
+        "build": "vite build",
+        "preview": "vite preview",
+        "publish": "npm publish"
+    },
+    "exports": {
+        ".": {
+            "import": "./src/index.js"
+        }
+    },
+    "devDependencies": {
+        "extjs-code-analyzer": "link:..\\test",
+        "fast-glob": "^3.2.12",
+        "picocolors": "^1.0.0",
+        "prettier": "^2.8.4",
+        "ru.coon": "^2.2.1",
+        "sass": "^1.58.3",
+        "vite": "^4.1.0"
+    },
+    "publishConfig": {
+        "registry": "https://nxs.sigma-it.ru/repository/npm-sigma-release/"
     }
-  },
-  "devDependencies": {
-    "extjs-code-analyzer": "link:..\\test",
-    "fast-glob": "^3.2.12",
-    "picocolors": "^1.0.0",
-    "prettier": "^2.8.4",
-    "ru.coon": "^2.2.1",
-    "sass": "^1.58.3",
-    "vite": "^4.1.0"
-  },
-  "publishConfig": {
-    "registry": "https://nxs.sigma-it.ru/repository/npm-sigma-release/"
-  }
 }

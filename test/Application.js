@@ -7,7 +7,7 @@ Ext.define('Some.multiple.defined.Module', {
 Ext.define('Some.Application', {
     extend: 'Some.other.BaseModule',
     alias: 'widget.module',
-    requires: ['Coon.nav.AppNavigationBar'],
+    requires: ['Coon.report.plugin.grid.ExecuteCommandAndSaveNotePlugin'],
     test01: function () {
         this.callParent();
     },
