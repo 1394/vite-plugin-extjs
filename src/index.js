@@ -2,12 +2,10 @@ import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, constants } from 'node:fs/promises';
 import pc from 'picocolors';
-import { ExtAnalyzer, classMap } from 'extjs-code-analyzer';
+import { ExtAnalyzer } from 'extjs-code-analyzer';
 import { Logger } from './Logger.js';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
-let DEBUG = false;
-let MODE;
 
 function realpath(path) {
     return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
@@ -75,16 +73,13 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
         },
         load(id) {
             if (id === resolvedVirtualModuleId) {
-                // TODO convert to string representation
-                console.log(classMap.toString(), 'VIRTUAL EXPORT');
-                return `export const ClassMap = classMap;`;
+                return `export const classMap = ${ExtAnalyzer.classManager.classMapToJSON()};`;
             }
         },
         async buildStart(options) {
             // TODO get acorn parse || parse options
         },
-        async config(config, { mode }) {
-            MODE = mode;
+        async config() {
             for (const namespace in mappings) {
                 const basePath = mappings[namespace];
                 if (basePath) {
