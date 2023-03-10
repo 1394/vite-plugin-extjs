@@ -25,21 +25,23 @@ export class Logger {
     }
 
     static echo(msg, level, ...rest) {
-        if (this.skip[level]) return;
+        if (this.skip[level]) {
+            return;
+        }
         this.addNewLine && console.log();
         let color;
         switch (level) {
-            case 'warn':
-                color = pc.yellow;
-                break;
-            case 'log':
-                color = pc.cyan;
-                break;
-            case 'error':
-                color = pc.red;
-                break;
-            default:
-                color = pc.black;
+        case 'warn':
+            color = pc.yellow;
+            break;
+        case 'info':
+            color = pc.cyan;
+            break;
+        case 'error':
+            color = pc.red;
+            break;
+        default:
+            color = pc.black;
         }
         console.log(`${color(this.prefix)}${msg}`, ...rest);
     }
@@ -49,7 +51,7 @@ export class Logger {
     }
 
     static info(msg, ...rest) {
-        this.echo(msg, 'log', ...rest);
+        this.echo(msg, 'info', ...rest);
     }
 
     static error(msg, ...rest) {
