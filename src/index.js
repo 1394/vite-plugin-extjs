@@ -2,7 +2,7 @@ import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, constants } from 'node:fs/promises';
 import pc from 'picocolors';
-import { ExtAnalyzer } from 'extjs-code-analyzer';
+import { ExtAnalyzer, classMap } from 'extjs-code-analyzer';
 import { Logger } from './Logger.js';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
@@ -30,12 +30,56 @@ function shouldSkip(id, exclude = []) {
     return checks.some(Boolean);
 }
 
+async function buildMap(basePath, namespace, include = [], exclude = []) {
+    basePath = Array.isArray(basePath) ? basePath : [basePath];
+    const globPaths = [];
+    for (const path of basePath) {
+        const realPath = realpath(path);
+        try {
+            await access(realPath, constants.R_OK);
+            Logger.info(`Resolved: ${realPath}`);
+            globPaths.push(realPath + '/**/*.js');
+        } catch (e) {
+            throw e;
+        }
+    }
+    const paths = await fg(globPaths);
+    for (const path of paths) {
+        if (!path.endsWith('.js')) {
+            continue;
+        }
+        const mustInclude = include.length && include.some((pattern) => path.includes(pattern));
+        if (!mustInclude) {
+            if (shouldSkip(path, exclude)) {
+                Logger.warn(`- Skipping: ${path}`);
+                continue;
+            }
+        }
+        const source = await readFile(path);
+        ExtAnalyzer.analyze(source.toString(), path);
+    }
+}
+
 const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], include = [] }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
+    const virtualModuleId = `virtual:${PLUGIN_NAME}`;
+    const resolvedVirtualModuleId = '\0' + virtualModuleId;
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
+        resolveId(id) {
+            if (id === virtualModuleId) {
+                return resolvedVirtualModuleId;
+            }
+        },
+        load(id) {
+            if (id === resolvedVirtualModuleId) {
+                // TODO convert to string representation
+                console.log(classMap.toString(), 'VIRTUAL EXPORT');
+                return `export const ClassMap = classMap;`;
+            }
+        },
         async buildStart(options) {
             // TODO get acorn parse || parse options
         },
@@ -46,36 +90,16 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                 if (basePath) {
                     Logger.info(`Resolving namespace "${namespace}"...`);
                     try {
-                        const realPath = realpath(basePath);
-                        await access(realPath, constants.R_OK);
-                        Logger.info(`Resolved: ${realPath}`);
-                        const timeLabel = `${pc.cyan('[ExtAnalyzer]')} Analyzed "${namespace}" in`;
+                        const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${namespace}" in`;
                         console.time(timeLabel);
-                        const paths = await fg(realPath + '/**/*.js');
-                        for (const path of paths) {
-                            if (!path.endsWith('.js')) {
-                                continue;
-                            }
-                            const mustInclude = include.length && include.some((pattern) => path.includes(pattern));
-                            if (!mustInclude) {
-                                if (shouldSkip(path, exclude)) {
-                                    Logger.warn(`- Skipping: ${path}`);
-                                    continue;
-                                }
-                            }
-                            const source = await readFile(path);
-                            ExtAnalyzer.analyze(source.toString(), path);
-                        }
-                        if (!((typeof DEBUG === 'boolean' && !DEBUG) || (DEBUG !== true && !DEBUG.log))) {
-                            return;
-                        }
+                        await buildMap(basePath, namespace, include, exclude);
                         console.timeEnd(timeLabel);
+                        ExtAnalyzer.classManager.resolveImports();
                     } catch (e) {
                         Logger.warn(e.message);
                     }
                 }
             }
-            ExtAnalyzer.classManager.resolveImports();
         },
         async transform(code, id) {
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
