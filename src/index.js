@@ -2,7 +2,7 @@ import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, constants } from 'node:fs/promises';
 import pc from 'picocolors';
-import { ExtAnalyzer } from 'extjs-code-analyzer';
+import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
@@ -121,7 +121,9 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             }
             Logger.info(`+ Analyzing: ${id}`);
             const fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
-            code = fileMeta.applyCodeTransforms(code);
+            if (!fileMeta.isCodeTransformApplied) {
+                code = fileMeta.applyCodeTransforms(code);
+            }
             if (fileMeta.isImportsInjected) {
                 Logger.warn('- Imports already injected. Skipping.');
                 return { code };
