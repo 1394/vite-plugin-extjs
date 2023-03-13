@@ -73,7 +73,8 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
         },
         load(id) {
             if (id === resolvedVirtualModuleId) {
-                return `export const classMap = ${ExtAnalyzer.classManager.classMapToJSON()};`;
+                return `export const classMap = ${ExtAnalyzer.classManager.classMapToJSON()};
+                        export const mappings = ${JSON.stringify(mappings)};`;
             }
         },
         async buildStart(options) {
@@ -97,6 +98,11 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             }
         },
         async transform(code, id) {
+            // Prevent transforming of Ext.loader scripts
+            // TODO get from config "disableCachingParam"
+            if (id.includes('?_ext_loader=')) {
+                return;
+            }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
             if (alwaysSkip(cleanId)) {
                 Logger.warn(`- Ignoring: ${id}`);
