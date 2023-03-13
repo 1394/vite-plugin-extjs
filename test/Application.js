@@ -1,13 +1,13 @@
-Ext.define('Some.multiple.defined.Module', {
+/*Ext.define('Some.multiple.defined.Module', {
     extend: 'Some.other.RequiredModule',
     multipleFn() {
         this.callParent();
     },
-});
+});*/
 Ext.define('Some.Application', {
-    extend: 'Some.other.BaseModule',
+    extend: 'Ext.Application',
     alias: 'widget.module',
-    // requires: ['Some.*'],
+    requires: ['Some.other.BaseModule', 'Some.another.UseModule'],
     test01: function () {
         this.callParent();
     },

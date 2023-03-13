@@ -3,7 +3,8 @@ Ext.define('Some.another.UseModule', {
     extend: 'Ext.panel.Panel',
     requires: [],
     uses: [],
+    viewModel: 'usemoduleviewmodel',
     constructor() {
         console.log('UseModule');
-    }
+    },
 });
