@@ -1,8 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  es-module-lexer: 1.0.0
-  extjs-code-analyzer: link:..\test
+  extjs-code-analyzer: link:..\extjs-code-analyzer
   fast-glob: ^3.2.12
   picocolors: ^1.0.0
   prettier: ^2.8.4
@@ -11,8 +10,7 @@ specifiers:
   vite: ^4.1.0
 
 devDependencies:
-  es-module-lexer: 1.0.0
-  extjs-code-analyzer: link:../test
+  extjs-code-analyzer: link:../extjs-code-analyzer
   fast-glob: 3.2.12
   picocolors: 1.0.0
   prettier: 2.8.4
@@ -274,10 +272,6 @@ packages:
       readdirp: 3.6.0
     optionalDependencies:
       fsevents: 2.3.2
-    dev: true
-
-  /es-module-lexer/1.0.0:
-    resolution: {integrity: sha512-+kmskslegYN7gDGMT8RDGzb165q/I93XxWqH2v/YwS8IKWMI6Ts9EUNmLFVGmZg8MBoaF3Z1dVeeFIPRcw8ISQ==}
     dev: true
 
   /esbuild/0.16.17:
