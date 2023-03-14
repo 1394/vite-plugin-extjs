@@ -1,9 +1,9 @@
 import fg from 'fast-glob';
-import { normalizePath } from 'vite';
-import { access, readFile, constants } from 'node:fs/promises';
+import {normalizePath} from 'vite';
+import {access, readFile, constants} from 'node:fs/promises';
 import pc from 'picocolors';
-import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
-import { Logger } from './Logger.js';
+import {ExtAnalyzer} from 'extjs-code-analyzer/src/Analyzer';
+import {Logger} from './Logger.js';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
 
@@ -58,7 +58,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], include = [] }) => {
+const viteImportExtjsRequires = ({mappings = {}, debug = false, exclude = [], include = []}) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
@@ -66,6 +66,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
+        // TODO maybe check ignored files here
         resolveId(id) {
             if (id === virtualModuleId) {
                 return resolvedVirtualModuleId;
@@ -101,40 +102,42 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             // Prevent transforming of Ext.loader scripts
             // TODO get from config "disableCachingParam"
             if (id.includes('?_ext_loader=')) {
-                return;
+                return {code};
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
             if (alwaysSkip(cleanId)) {
-                Logger.warn(`- Ignoring: ${id}`);
-                return;
+                Logger.warn(`- Ignoring (always skip): ${id}`);
+                return {code};
             }
             const mustInclude = include.length && include.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
                 if (typeof ExtAnalyzer.fileMap[cleanId] !== 'object') {
-                    Logger.warn(`- Ignoring(not mapped): ${id}`);
-                    return;
+                    Logger.warn(`- Ignoring (not mapped): ${id}`);
+                    return {code};
                 }
                 if (shouldSkip(id, exclude)) {
                     Logger.warn(` - Skipping: ${id}`);
-                    return;
+                    return {code};
                 }
             }
             Logger.info(`+ Analyzing: ${id}`);
+            // TODO on HMR reanalyze imports!
             const fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
             if (!fileMeta.isCodeTransformApplied) {
                 code = fileMeta.applyCodeTransforms(code);
             }
             if (fileMeta.isImportsInjected) {
                 Logger.warn('- Imports already injected. Skipping.');
-                return { code };
+                return {code: fileMeta.code};
             }
             const importPaths = fileMeta.getImportsPaths();
             if (!importPaths.length) {
                 Logger.info('- Empty import paths');
-                return { code };
+                return {code};
             }
             let importString = '';
             importPaths.forEach((path) => {
+                //TODO check fileMeta.existingImports
                 importString += `import '${path}';\n`;
             });
             if (importString.length) {
@@ -142,8 +145,8 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                     code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
                 fileMeta.isImportsInjected = true;
             }
-            return { code };
+            return {code};
         },
     };
 };
-export { viteImportExtjsRequires };
+export {viteImportExtjsRequires};
