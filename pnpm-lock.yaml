@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  extjs-code-analyzer: 0.1.2
+  extjs-code-analyzer: ^0.1.4
   fast-glob: ^3.2.12
   picocolors: ^1.0.0
   prettier: ^2.8.4
@@ -9,7 +9,7 @@ specifiers:
   vite: 4.1.4
 
 dependencies:
-  extjs-code-analyzer: 0.1.2
+  extjs-code-analyzer: 0.1.4
   fast-glob: 3.2.12
   picocolors: 1.0.0
 
@@ -239,6 +239,17 @@ packages:
       fastq: 1.15.0
     dev: false
 
+  /acorn-walk/8.2.0:
+    resolution: {integrity: sha512-k+iyHEuPgSw6SbuDpGQM+06HQUa04DZ3o+F6CSzXMvvI5KMvnaEqXe+YVe555R9nn6GPt404fos4wcgpw12SDA==}
+    engines: {node: '>=0.4.0'}
+    dev: false
+
+  /acorn/8.8.2:
+    resolution: {integrity: sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+    dev: false
+
   /braces/3.0.2:
     resolution: {integrity: sha512-b8um+L1RzM3WDSzvhm6gIz1yfTbBt6YTlcEKAvsmqCZZFw46z626lVj9j1yEPW33H5H+lBQpZMP1k8l+78Ha0A==}
     engines: {node: '>=8'}
@@ -276,8 +287,11 @@ packages:
       '@esbuild/win32-x64': 0.16.17
     dev: true
 
-  /extjs-code-analyzer/0.1.2:
-    resolution: {integrity: sha512-vC5uY6AKO0uT5RQR5F3l36JK6LqtwLHzAA9tMCXZnPv8YRQJu5YeS4wOiPPTzz7b47JCHhn2jO+UY/a5v/PIVA==}
+  /extjs-code-analyzer/0.1.4:
+    resolution: {integrity: sha512-Co5llspVhHoh3H5wBGI5p58WBA1ytBdJ1CopKFX1ZUE6Zq6LQiRjuonMaSkILD3shjp20svHzZ3JJibceWWJ9A==}
+    dependencies:
+      acorn: 8.8.2
+      acorn-walk: 8.2.0
     dev: false
 
   /fast-glob/3.2.12:

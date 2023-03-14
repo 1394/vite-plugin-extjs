@@ -1,6 +1,6 @@
 {
     "name": "vite-plugin-extjs",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "author": "ivanovayu@sigma-it.ru",
     "type": "module",
     "scripts": {
@@ -20,7 +20,7 @@
     "dependencies": {
         "picocolors": "^1.0.0",
         "fast-glob": "^3.2.12",
-        "extjs-code-analyzer": "0.1.2"
+        "extjs-code-analyzer": "^0.1.4"
     },
     "devDependencies": {
         "prettier": "^2.8.4",
