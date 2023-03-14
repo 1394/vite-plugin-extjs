@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  extjs-code-analyzer: link:..\extjs-code-analyzer
+  extjs-code-analyzer: ^0.1.2
   fast-glob: ^3.2.12
   picocolors: ^1.0.0
   prettier: ^2.8.4
@@ -9,8 +9,10 @@ specifiers:
   sass: ^1.58.3
   vite: ^4.1.0
 
+dependencies:
+  extjs-code-analyzer: 0.1.2
+
 devDependencies:
-  extjs-code-analyzer: link:../extjs-code-analyzer
   fast-glob: 3.2.12
   picocolors: 1.0.0
   prettier: 2.8.4
@@ -303,6 +305,10 @@ packages:
       '@esbuild/win32-ia32': 0.16.17
       '@esbuild/win32-x64': 0.16.17
     dev: true
+
+  /extjs-code-analyzer/0.1.2:
+    resolution: {integrity: sha512-vC5uY6AKO0uT5RQR5F3l36JK6LqtwLHzAA9tMCXZnPv8YRQJu5YeS4wOiPPTzz7b47JCHhn2jO+UY/a5v/PIVA==}
+    dev: false
 
   /fast-glob/3.2.12:
     resolution: {integrity: sha512-DVj4CQIYYow0BlaelwK1pHl5n5cRSJfM60UA0zK891sVInoPri2Ekj7+e1CT3/3qxXenpI+nBBmQAcJPJgaj4w==}
