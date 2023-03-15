@@ -1,3 +1,4 @@
+import './lib/Some/src/other/BaseModule.js';
 Ext.define('Some.multiple.defined.Module', {
     extend: 'Some.other.RequiredModule',
     multipleFn() {

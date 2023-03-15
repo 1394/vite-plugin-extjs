@@ -4,5 +4,5 @@ Ext.define('Some.other.RequiredModule', {
     uses: [],
     constructor() {
         console.log('RequiredModule');
-    }
+    },
 });
