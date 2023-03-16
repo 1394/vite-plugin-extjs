@@ -14,7 +14,7 @@ const assetsMap = [];
 function realpath(path) {
     return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
-
+//TODO use https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
 function alwaysSkip(id) {
     const checks = [
         id.endsWith('.css'),
@@ -57,7 +57,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
         const mustInclude = include.length && include.some((pattern) => path.includes(pattern));
         if (!mustInclude) {
             if (shouldSkip(path, exclude)) {
-                Logger.warn(`- Skipping: ${path}`);
+                Logger.info(`- Skipping: ${path}`);
                 continue;
             }
         }
@@ -106,9 +106,9 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                     Logger.info(`Resolving namespace "${namespace}"...`);
                     try {
                         const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${namespace}" in`;
-                        console.time(timeLabel);
+                        !Logger.skip('info') && console.time(timeLabel);
                         await buildMap(basePath, namespace, include, exclude);
-                        console.timeEnd(timeLabel);
+                        !Logger.skip('info') && console.timeEnd(timeLabel);
                         ExtAnalyzer.classManager.resolveImports();
                     } catch (e) {
                         Logger.warn(e.message);
@@ -124,17 +124,17 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
             if (alwaysSkip(cleanId)) {
-                Logger.warn(`- Ignoring (always skip): ${id}`);
+                Logger.info(`- Ignoring (always skip): ${id}`);
                 return { code };
             }
             const mustInclude = include.length && include.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
                 if (typeof ExtAnalyzer.fileMap[cleanId] !== 'object') {
-                    Logger.warn(`- Ignoring (not mapped): ${id}`);
+                    Logger.info(`- Ignoring (not mapped): ${id}`);
                     return { code };
                 }
                 if (shouldSkip(id, exclude)) {
-                    Logger.warn(` - Skipping: ${id}`);
+                    Logger.info(` - Skipping: ${id}`);
                     return { code };
                 }
             }
@@ -145,7 +145,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                 code = fileMeta.applyCodeTransforms(code);
             }
             if (fileMeta.isImportsInjected) {
-                Logger.warn('- Imports already injected. Skipping.');
+                Logger.info('- Imports already injected. Skipping.');
                 return { code: fileMeta.code };
             }
             const importPaths = fileMeta.getImportsPaths();
