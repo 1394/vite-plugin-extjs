@@ -67,7 +67,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-const vitePluginExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [] }) => {
+const viteExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [] }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
@@ -119,9 +119,9 @@ const vitePluginExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoin
             }
         },
         async transform(code, id) {
-            // Prevent transforming of Ext.loader scripts
-            // TODO get from config "disableCachingParam"
             if (id.includes('?_ext_loader=')) {
+                // Prevent transforming of Ext.loader scripts
+                // TODO get from config "disableCachingParam"
                 return { code };
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
@@ -140,17 +140,20 @@ const vitePluginExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoin
                     return { code };
                 }
             }
+            if (id === 'D:/projects/web-billing/frontend/app/desktop/src/Application.js') {
+                debugger;
+            }
             const fileMeta = ExtAnalyzer.sync(code, cleanId);
-            if (fileMeta.isCached && !fileMeta.codeTransforms.length) {
+            if (fileMeta.isCached && fileMeta.transformedCode) {
                 Logger.info(`- Ignoring (not changed): ${id}`);
-                return { code: fileMeta.transformedCode || fileMeta.code };
+                return { code: fileMeta.transformedCode };
             }
 
             Logger.info(`+ Analyzing: ${id}`);
 
             code = fileMeta.applyCodeTransforms(code);
-            if (fileMeta.code !== fileMeta.transformedCode) {
-                Logger.info('+ Code transformations applied.');
+            if (fileMeta.transformedCode) {
+                Logger.info(`+ ${fileMeta.appliedTransformations} transformations applied.`);
             }
             const importPaths = fileMeta.getImportsPaths();
             if (!importPaths.length) {
@@ -172,4 +175,4 @@ const vitePluginExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoin
         },
     };
 };
-export { vitePluginExtJS };
+export default viteExtJS;
