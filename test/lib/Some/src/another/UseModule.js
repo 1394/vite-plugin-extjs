@@ -6,5 +6,6 @@ Ext.define('Some.another.UseModule', {
     viewModel: 'usemoduleviewmodel',
     constructor() {
         console.log('UseModule');
+        this.callParent();
     },
 });

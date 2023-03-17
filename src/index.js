@@ -14,6 +14,7 @@ const assetsMap = [];
 function realpath(path) {
     return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
+
 //TODO use https://github.com/rollup/plugins/tree/master/packages/pluginutils#createfilter
 function alwaysSkip(id) {
     const checks = [
@@ -66,7 +67,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], include = [] }) => {
+const vitePluginExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [] }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
@@ -94,6 +95,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
             if (assetsBundleSource.length) {
                 this.emitFile({
                     type: 'asset',
+                    // TODO config option includeScss && scssBundlePath
                     fileName: 'tmp/components.scss',
                     source: assetsBundleSource,
                 });
@@ -107,7 +109,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                     try {
                         const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${namespace}" in`;
                         !Logger.skip('info') && console.time(timeLabel);
-                        await buildMap(basePath, namespace, include, exclude);
+                        await buildMap(basePath, namespace, entryPoints, exclude);
                         !Logger.skip('info') && console.timeEnd(timeLabel);
                         ExtAnalyzer.classManager.resolveImports();
                     } catch (e) {
@@ -127,7 +129,7 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                 Logger.info(`- Ignoring (always skip): ${id}`);
                 return { code };
             }
-            const mustInclude = include.length && include.some((pattern) => id.includes(pattern));
+            const mustInclude = entryPoints.length && entryPoints.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
                 if (typeof ExtAnalyzer.fileMap[cleanId] !== 'object') {
                     Logger.info(`- Ignoring (not mapped): ${id}`);
@@ -138,15 +140,17 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                     return { code };
                 }
             }
-            Logger.info(`+ Analyzing: ${id}`);
-            // TODO on HMR reanalyze imports!
-            const fileMeta = ExtAnalyzer.getFile(cleanId) || ExtAnalyzer.analyze(code, cleanId, true);
-            if (!fileMeta.isCodeTransformApplied) {
-                code = fileMeta.applyCodeTransforms(code);
+            const fileMeta = ExtAnalyzer.sync(code, cleanId);
+            if (fileMeta.isCached && !fileMeta.codeTransforms.length) {
+                Logger.info(`- Ignoring (not changed): ${id}`);
+                return { code: fileMeta.transformedCode || fileMeta.code };
             }
-            if (fileMeta.isImportsInjected) {
-                Logger.info('- Imports already injected. Skipping.');
-                return { code: fileMeta.code };
+
+            Logger.info(`+ Analyzing: ${id}`);
+
+            code = fileMeta.applyCodeTransforms(code);
+            if (fileMeta.code !== fileMeta.transformedCode) {
+                Logger.info('+ Code transformations applied.');
             }
             const importPaths = fileMeta.getImportsPaths();
             if (!importPaths.length) {
@@ -154,18 +158,18 @@ const viteImportExtjsRequires = ({ mappings = {}, debug = false, exclude = [], i
                 return { code };
             }
             let importString = '';
-            importPaths.forEach((path) => {
-                //TODO check fileMeta.existingImports
+            for (const path of importPaths) {
+                if (path === id) continue;
                 importString += `import '${path}';\n`;
-            });
+            }
             if (importString.length) {
                 // TODO generate && return sourceMap
-                fileMeta.code =
+                fileMeta.transformedCode =
                     code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
-                fileMeta.isImportsInjected = true;
+                Logger.info(`+ ${importPaths.length} imports injected.`);
             }
             return { code };
         },
     };
 };
-export { viteImportExtjsRequires };
+export { vitePluginExtJS };

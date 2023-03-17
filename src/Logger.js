@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 
 export class Logger {
-    static #config;
+    static #config = {};
     static addNewLine = false;
     static #prefix = '';
     static get prefix() {

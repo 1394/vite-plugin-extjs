@@ -18,14 +18,15 @@
         "vite-plugin"
     ],
     "dependencies": {
-        "picocolors": "^1.0.0",
+        "extjs-code-analyzer": "^0.1.4",
         "fast-glob": "^3.2.12",
-        "extjs-code-analyzer": "^0.1.4"
+        "picocolors": "^1.0.0"
     },
     "devDependencies": {
         "prettier": "^2.8.4",
         "ru.coon": "^2.2.1",
-        "vite": "4.1.4"
+        "vite": "4.1.4",
+        "vite-plugin-inspect": "^0.7.17"
     },
     "publishConfig": {
         "registry": "https://nxs.sigma-it.ru/repository/npm-sigma-release/"
