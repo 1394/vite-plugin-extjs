@@ -67,7 +67,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-const viteExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [] }) => {
+const viteExtJS = ({ paths = {}, debug = false, exclude = [], entryPoints = [] }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
@@ -84,7 +84,7 @@ const viteExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [
         load(id) {
             if (id === resolvedVirtualModuleId) {
                 return `export const classMap = ${ExtAnalyzer.classManager.classMapToJSON()};
-                        export const mappings = ${JSON.stringify(mappings)};`;
+                        export const loaderPaths = ${JSON.stringify(paths)};`;
             }
         },
         async buildStart() {
@@ -95,15 +95,15 @@ const viteExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [
             if (assetsBundleSource.length) {
                 this.emitFile({
                     type: 'asset',
-                    // TODO config option includeScss && scssBundlePath
                     fileName: 'tmp/components.scss',
                     source: assetsBundleSource,
                 });
             }
         },
         async config() {
-            for (const namespace in mappings) {
-                const basePath = mappings[namespace];
+            //TODO if serve mode - return
+            for (const namespace in paths) {
+                const basePath = paths[namespace];
                 if (basePath) {
                     Logger.info(`Resolving namespace "${namespace}"...`);
                     try {
@@ -119,7 +119,7 @@ const viteExtJS = ({ mappings = {}, debug = false, exclude = [], entryPoints = [
             }
         },
         async transform(code, id) {
-            if (id.includes('?_ext_loader=')) {
+            if (id.includes('?_dc=')) {
                 // Prevent transforming of Ext.loader scripts
                 // TODO get from config "disableCachingParam"
                 return { code };
