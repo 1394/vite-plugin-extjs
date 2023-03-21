@@ -1,6 +1,7 @@
 import fg from 'fast-glob';
 import { normalizePath } from 'vite';
-import { access, readFile, constants } from 'node:fs/promises';
+import { access, readFile, appendFile, constants } from 'node:fs/promises';
+import { copy } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
@@ -67,11 +68,19 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-const viteExtJS = ({ paths = {}, debug = false, exclude = [], entryPoints = [] }) => {
+const viteExtJS = ({
+    paths = {},
+    debug = false,
+    exclude = [],
+    entryPoints = [],
+    theme = { path: '', sassFile: '', outPath: '', outSassFile: 'theme.scss' },
+}) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
     const resolvedVirtualModuleId = '\0' + virtualModuleId;
+    let viteConfig;
+
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
@@ -87,20 +96,35 @@ const viteExtJS = ({ paths = {}, debug = false, exclude = [], entryPoints = [] }
                         export const loaderPaths = ${JSON.stringify(paths)};`;
             }
         },
-        async buildStart() {
+        async closeBundle() {
+            //TODO get mode - serve:return
             let assetsBundleSource = '';
             for (const path of assetsMap) {
                 assetsBundleSource += `/* ${path} */\n` + (await readFile(path)).toString() + '\n';
             }
-            if (assetsBundleSource.length) {
-                this.emitFile({
-                    type: 'asset',
-                    fileName: 'tmp/components.scss',
-                    source: assetsBundleSource,
-                });
+            const { path, sassFile, outPath, outSassFile } = theme;
+            if (path && sassFile && outPath) {
+                const themeBundle = realpath(viteConfig.build.outDir + '/' + outPath + '/' + outSassFile);
+                try {
+                    Logger.info('Copying theme files...');
+                    await copy(realpath(path), realpath(viteConfig.build.outDir + '/' + outPath), {
+                        overwrite: true,
+                    });
+                    await copy(realpath(path + '/' + sassFile), themeBundle, {
+                        overwrite: true,
+                    });
+                    if (assetsBundleSource.length) {
+                        Logger.info('Appending component styles...');
+                        await appendFile(themeBundle, assetsBundleSource);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    process.exit(1);
+                }
             }
         },
-        async config() {
+        async config(config) {
+            viteConfig = config;
             //TODO if serve mode - return
             for (const namespace in paths) {
                 const basePath = paths[namespace];
@@ -119,9 +143,9 @@ const viteExtJS = ({ paths = {}, debug = false, exclude = [], entryPoints = [] }
             }
         },
         async transform(code, id) {
+            // Prevent transforming of Ext.loader scripts
+            // TODO get from config "disableCachingParam"
             if (id.includes('?_dc=')) {
-                // Prevent transforming of Ext.loader scripts
-                // TODO get from config "disableCachingParam"
                 return { code };
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;

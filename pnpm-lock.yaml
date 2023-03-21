@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   extjs-code-analyzer: ^0.1.4
   fast-glob: ^3.2.12
+  fs-extra: ^11.1.1
   picocolors: ^1.0.0
   prettier: ^2.8.4
   ru.coon: ^2.2.1
@@ -12,6 +13,7 @@ specifiers:
 dependencies:
   extjs-code-analyzer: 0.1.4
   fast-glob: 3.2.12
+  fs-extra: 11.1.1
   picocolors: 1.0.0
 
 devDependencies:
@@ -362,14 +364,13 @@ packages:
       to-regex-range: 5.0.1
     dev: false
 
-  /fs-extra/11.1.0:
-    resolution: {integrity: sha512-0rcTq621PD5jM/e0a3EJoGC/1TC5ZBCERW82LQuwfGnCa1V8w7dpYH1yNu+SLb6E5dkeCBzKEyLGlFrnr+dUyw==}
+  /fs-extra/11.1.1:
+    resolution: {integrity: sha512-MGIE4HOvQCeUCzmlHs0vXpih4ysz4wg9qiSAu6cd42lVwPbTM1TjV7RusoyQqMmk/95gdQZX72u+YW+c3eEpFQ==}
     engines: {node: '>=14.14'}
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.1.0
       universalify: 2.0.0
-    dev: true
 
   /fsevents/2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
@@ -392,7 +393,6 @@ packages:
 
   /graceful-fs/4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
-    dev: true
 
   /has/1.0.3:
     resolution: {integrity: sha512-f2dvO0VU6Oej7RkWJGrehjbzMAjFp5/VKPp5tTpWIV4JHHZK1/BxbFRtf/siA2SWTe09caDmVtYYzWEIbBS4zw==}
@@ -430,7 +430,6 @@ packages:
       universalify: 2.0.0
     optionalDependencies:
       graceful-fs: 4.2.11
-    dev: true
 
   /kolorist/1.7.0:
     resolution: {integrity: sha512-ymToLHqL02udwVdbkowNpzjFd6UzozMtshPQKVi5k1EjKRqKqBrOnE9QbLEb0/pV76SAiIT13hdL8R6suc+f3g==}
@@ -564,7 +563,6 @@ packages:
   /universalify/2.0.0:
     resolution: {integrity: sha512-hAZsKq7Yy11Zu1DE0OzWjw7nnLZmJZYTDZZyEFHZdUhV8FkH5MCfoU1XMaxXovpyW5nq5scPqq0ZDP9Zyl04oQ==}
     engines: {node: '>= 10.0.0'}
-    dev: true
 
   /vite-plugin-inspect/0.7.17_vite@4.1.4:
     resolution: {integrity: sha512-0z33Z7ap6DOzOO3iulGROWZq9oUbarmMKHtdVbCMJ3OL0JOd8UvEqnTazU/2Y8Y2WpOyaZuEV6USJ9KHoZ7f+A==}
@@ -575,7 +573,7 @@ packages:
       '@antfu/utils': 0.7.2
       '@rollup/pluginutils': 5.0.2
       debug: 4.3.4
-      fs-extra: 11.1.0
+      fs-extra: 11.1.1
       kolorist: 1.7.0
       sirv: 2.0.2
       ufo: 1.1.1
