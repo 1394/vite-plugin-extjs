@@ -1,7 +1,10 @@
 import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, appendFile, constants } from 'node:fs/promises';
-import { copy } from 'fs-extra/esm';
+import * as readline from 'node:readline/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { EOL } from 'node:os';
+import { copy, ensureFile, remove } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
@@ -71,21 +74,45 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
 async function copyThemeFiles(theme, resolvedConfig) {
     let assetsBundleSource = '';
     for (const path of assetsMap) {
-        assetsBundleSource += `/* ${path} */\n` + (await readFile(path)).toString() + '\n';
+        assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
     }
-    const { path, sassFile, outPath, outSassFile } = theme;
+    const { path, sassFile, outPath, outSassFile, setSassVars } = theme;
     if (path && sassFile) {
         const themeBundle = realpath(
             [resolvedConfig.build.outDir, outPath, outSassFile || '_bundle.scss'].filter(Boolean).join('/')
         );
         try {
             Logger.warn('Copying theme files...');
+            // Copy resources
             await copy(realpath(path), realpath([resolvedConfig.build.outDir, outPath].filter(Boolean).join('/')), {
                 overwrite: true,
             });
-            await copy(realpath(path + '/' + sassFile), themeBundle, {
-                overwrite: true,
-            });
+            // Prepend css vars
+            if (Array.isArray(setSassVars) && setSassVars.length) {
+                await remove(themeBundle);
+                await ensureFile(themeBundle);
+                const fileReadStream = createReadStream(realpath(path + '/' + sassFile));
+                const fileWriteStream = createWriteStream(themeBundle);
+                const rl = readline.createInterface({
+                    input: fileReadStream,
+                    crlfDelay: Infinity,
+                });
+                for (const sassVar of setSassVars) {
+                    fileWriteStream.write(sassVar + EOL);
+                }
+                for await (const line of rl) {
+                    fileWriteStream.write(line + EOL);
+                }
+                fileWriteStream.write(assetsBundleSource);
+                fileWriteStream.close();
+                fileReadStream.close();
+            } else {
+                // Copy theme sass file
+                await copy(realpath(path + '/' + sassFile), themeBundle, {
+                    overwrite: true,
+                });
+            }
+            // Append component sass files to theme bundle
             if (assetsBundleSource.length) {
                 Logger.warn('Appending component styles...');
                 await appendFile(themeBundle, assetsBundleSource);
@@ -102,7 +129,7 @@ const viteExtJS = ({
     debug = false,
     exclude = [],
     entryPoints = [],
-    theme = { path: '', sassFile: '', outPath: '', outSassFile: '' },
+    theme = { path: '', sassFile: '', outPath: '', outSassFile: '', setSassVars: [] },
     disableCachingParam = '_dc',
 }) => {
     Logger.config = debug;
@@ -200,12 +227,12 @@ const viteExtJS = ({
             let importString = '';
             for (const path of importPaths) {
                 if (path === id) continue;
-                importString += `import '${path}';\n`;
+                importString += `import '${path}';` + EOL;
             }
             if (importString.length) {
                 // TODO generate && return sourceMap
                 fileMeta.transformedCode =
-                    code = `/*** <${PLUGIN_NAME}> ***/\n${importString}/*** </${PLUGIN_NAME}> ***/\n\n${code}`;
+                    code = `/* <${PLUGIN_NAME}> */${EOL}${importString}/* </${PLUGIN_NAME}> */${EOL}${code}`;
                 Logger.info(`+ ${importPaths.length} imports injected.`);
             }
             return { code };
