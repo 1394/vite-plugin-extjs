@@ -74,13 +74,13 @@ const viteExtJS = ({
     exclude = [],
     entryPoints = [],
     theme = { path: '', sassFile: '', outPath: '', outSassFile: 'theme.scss' },
+    disableCachingParam = '_dc',
 }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
     const resolvedVirtualModuleId = '\0' + virtualModuleId;
-    let viteConfig;
-
+    let resolvedConfig;
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
@@ -97,17 +97,16 @@ const viteExtJS = ({
             }
         },
         async closeBundle() {
-            //TODO get mode - serve:return
             let assetsBundleSource = '';
             for (const path of assetsMap) {
                 assetsBundleSource += `/* ${path} */\n` + (await readFile(path)).toString() + '\n';
             }
             const { path, sassFile, outPath, outSassFile } = theme;
             if (path && sassFile && outPath) {
-                const themeBundle = realpath(viteConfig.build.outDir + '/' + outPath + '/' + outSassFile);
+                const themeBundle = realpath(resolvedConfig.build.outDir + '/' + outPath + '/' + outSassFile);
                 try {
                     Logger.info('Copying theme files...');
-                    await copy(realpath(path), realpath(viteConfig.build.outDir + '/' + outPath), {
+                    await copy(realpath(path), realpath(resolvedConfig.build.outDir + '/' + outPath), {
                         overwrite: true,
                     });
                     await copy(realpath(path + '/' + sassFile), themeBundle, {
@@ -123,17 +122,21 @@ const viteExtJS = ({
                 }
             }
         },
-        async config(config) {
-            viteConfig = config;
-            //TODO if serve mode - return
-            for (const namespace in paths) {
-                const basePath = paths[namespace];
+        async configResolved(config) {
+            resolvedConfig = config;
+            const { command, mode } = config;
+            const namespaces = Object.keys(paths || {});
+            if ((command === 'serve' && mode === 'production') || namespaces.length === 0) {
+                return;
+            }
+            for (const ns of namespaces) {
+                const basePath = paths[ns];
                 if (basePath) {
-                    Logger.info(`Resolving namespace "${namespace}"...`);
+                    Logger.info(`Resolving namespace "${ns}"...`);
                     try {
-                        const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${namespace}" in`;
+                        const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${ns}" in`;
                         !Logger.skip('info') && console.time(timeLabel);
-                        await buildMap(basePath, namespace, entryPoints, exclude);
+                        await buildMap(basePath, ns, entryPoints, exclude);
                         !Logger.skip('info') && console.timeEnd(timeLabel);
                         ExtAnalyzer.classManager.resolveImports();
                     } catch (e) {
@@ -144,8 +147,7 @@ const viteExtJS = ({
         },
         async transform(code, id) {
             // Prevent transforming of Ext.loader scripts
-            // TODO get from config "disableCachingParam"
-            if (id.includes('?_dc=')) {
+            if (id.includes(`?${disableCachingParam}=`)) {
                 return { code };
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
