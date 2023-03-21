@@ -68,12 +68,41 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
+async function copyThemeFiles(theme, resolvedConfig) {
+    let assetsBundleSource = '';
+    for (const path of assetsMap) {
+        assetsBundleSource += `/* ${path} */\n` + (await readFile(path)).toString() + '\n';
+    }
+    const { path, sassFile, outPath, outSassFile } = theme;
+    if (path && sassFile) {
+        const themeBundle = realpath(
+            [resolvedConfig.build.outDir, outPath, outSassFile || '_bundle.scss'].filter(Boolean).join('/')
+        );
+        try {
+            Logger.warn('Copying theme files...');
+            await copy(realpath(path), realpath([resolvedConfig.build.outDir, outPath].filter(Boolean).join('/')), {
+                overwrite: true,
+            });
+            await copy(realpath(path + '/' + sassFile), themeBundle, {
+                overwrite: true,
+            });
+            if (assetsBundleSource.length) {
+                Logger.warn('Appending component styles...');
+                await appendFile(themeBundle, assetsBundleSource);
+            }
+        } catch (e) {
+            console.error(e);
+            process.exit(1);
+        }
+    }
+}
+
 const viteExtJS = ({
     paths = {},
     debug = false,
     exclude = [],
     entryPoints = [],
-    theme = { path: '', sassFile: '', outPath: '', outSassFile: 'theme.scss' },
+    theme = { path: '', sassFile: '', outPath: '', outSassFile: '' },
     disableCachingParam = '_dc',
 }) => {
     Logger.config = debug;
@@ -97,29 +126,8 @@ const viteExtJS = ({
             }
         },
         async closeBundle() {
-            let assetsBundleSource = '';
-            for (const path of assetsMap) {
-                assetsBundleSource += `/* ${path} */\n` + (await readFile(path)).toString() + '\n';
-            }
-            const { path, sassFile, outPath, outSassFile } = theme;
-            if (path && sassFile && outPath) {
-                const themeBundle = realpath(resolvedConfig.build.outDir + '/' + outPath + '/' + outSassFile);
-                try {
-                    Logger.info('Copying theme files...');
-                    await copy(realpath(path), realpath(resolvedConfig.build.outDir + '/' + outPath), {
-                        overwrite: true,
-                    });
-                    await copy(realpath(path + '/' + sassFile), themeBundle, {
-                        overwrite: true,
-                    });
-                    if (assetsBundleSource.length) {
-                        Logger.info('Appending component styles...');
-                        await appendFile(themeBundle, assetsBundleSource);
-                    }
-                } catch (e) {
-                    console.error(e);
-                    process.exit(1);
-                }
+            if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
+                await copyThemeFiles(theme, resolvedConfig);
             }
         },
         async configResolved(config) {
@@ -132,7 +140,7 @@ const viteExtJS = ({
             for (const ns of namespaces) {
                 const basePath = paths[ns];
                 if (basePath) {
-                    Logger.info(`Resolving namespace "${ns}"...`);
+                    Logger.warn(`Resolving namespace "${ns}"...`);
                     try {
                         const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${ns}" in`;
                         !Logger.skip('info') && console.time(timeLabel);
@@ -143,6 +151,9 @@ const viteExtJS = ({
                         Logger.warn(e.message);
                     }
                 }
+            }
+            if (command === 'serve' && mode === 'development') {
+                await copyThemeFiles(theme, resolvedConfig);
             }
         },
         async transform(code, id) {
