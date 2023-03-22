@@ -76,7 +76,7 @@ async function copyThemeFiles(theme, resolvedConfig) {
     for (const path of assetsMap) {
         assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
     }
-    const { basePath, sassFile, outPath, outSassFile, setSassVars } = theme;
+    const { basePath, sassFile, outPath, outSassFile, setSassVars = [], addImports = [], replaceImportPaths } = theme;
     if (basePath && sassFile) {
         const themeBundle = realpath(
             [resolvedConfig.build.outDir, outPath, outSassFile || '_bundle.scss'].filter(Boolean).join('/')
@@ -87,8 +87,11 @@ async function copyThemeFiles(theme, resolvedConfig) {
             await copy(realpath(basePath), realpath([resolvedConfig.build.outDir, outPath].filter(Boolean).join('/')), {
                 overwrite: true,
             });
+            const needRewriteThemeBundle =
+                (Array.isArray(setSassVars) && setSassVars.length) || (Array.isArray(addImports) && addImports.length);
+            const needReplaceImportPaths = typeof replaceImportPaths === 'object';
             // Prepend css vars
-            if (Array.isArray(setSassVars) && setSassVars.length) {
+            if (needRewriteThemeBundle || needReplaceImportPaths) {
                 await remove(themeBundle);
                 await ensureFile(themeBundle);
                 const fileReadStream = createReadStream(realpath(basePath + '/' + sassFile));
@@ -100,8 +103,13 @@ async function copyThemeFiles(theme, resolvedConfig) {
                 for (const sassVar of setSassVars) {
                     fileWriteStream.write(sassVar + EOL);
                 }
-                // TODO replace relative import paths
-                for await (const line of rl) {
+                for (const importPath of addImports) {
+                    fileWriteStream.write(`@import '${importPath}';` + EOL);
+                }
+                for await (let line of rl) {
+                    if (needReplaceImportPaths) {
+                        line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
+                    }
                     fileWriteStream.write(line + EOL);
                 }
                 fileWriteStream.write(assetsBundleSource);
@@ -205,9 +213,6 @@ const viteExtJS = ({
                     Logger.info(` - Skipping: ${id}`);
                     return { code };
                 }
-            }
-            if (id === 'D:/projects/web-billing/frontend/app/desktop/src/Application.js') {
-                debugger;
             }
             const fileMeta = ExtAnalyzer.sync(code, cleanId);
             if (fileMeta.isCached && fileMeta.transformedCode) {
