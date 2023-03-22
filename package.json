@@ -1,6 +1,6 @@
 {
     "name": "vite-plugin-extjs",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "author": "ivanovayu@sigma-it.ru",
     "type": "module",
     "scripts": {
@@ -9,13 +9,17 @@
         "preview": "vite preview",
         "publish": "npm publish"
     },
+    "files": [
+        "src"
+    ],
     "exports": {
         ".": {
             "import": "./src/index.js"
         }
     },
     "keywords": [
-        "vite-plugin"
+        "vite-plugin",
+        "extjs"
     ],
     "dependencies": {
         "extjs-code-analyzer": "^0.1.5",
