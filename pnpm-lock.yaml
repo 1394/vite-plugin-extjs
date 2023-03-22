@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  extjs-code-analyzer: ^0.1.4
+  extjs-code-analyzer: ^0.1.5
   fast-glob: ^3.2.12
   fs-extra: ^11.1.1
   picocolors: ^1.0.0
@@ -11,7 +11,7 @@ specifiers:
   vite-plugin-inspect: ^0.7.17
 
 dependencies:
-  extjs-code-analyzer: 0.1.4
+  extjs-code-analyzer: 0.1.5
   fast-glob: 3.2.12
   fs-extra: 11.1.1
   picocolors: 1.0.0
@@ -333,8 +333,8 @@ packages:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
     dev: true
 
-  /extjs-code-analyzer/0.1.4:
-    resolution: {integrity: sha512-Co5llspVhHoh3H5wBGI5p58WBA1ytBdJ1CopKFX1ZUE6Zq6LQiRjuonMaSkILD3shjp20svHzZ3JJibceWWJ9A==}
+  /extjs-code-analyzer/0.1.5:
+    resolution: {integrity: sha512-xHftqRKIPkMPdPJ7hY/+NnOHt7EDrMQe501MS9/QTpBhbuJb6rttRLbk1kU4HtFn06PMsCqEnCyLmpaobVqpkA==}
     dependencies:
       acorn: 8.8.2
       acorn-walk: 8.2.0
