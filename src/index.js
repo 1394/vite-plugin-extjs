@@ -1,20 +1,15 @@
 import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, appendFile, constants } from 'node:fs/promises';
-// import * as readline from 'node:readline/promises';
-// import { createReadStream, createWriteStream } from 'node:fs';
+import * as readline from 'node:readline/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { fork } from 'node:child_process';
-import { fileURLToPath } from 'url';
-import { dirname } from 'node:path';
 import { EOL } from 'node:os';
-// import { copy, ensureFile, remove } from 'fs-extra/esm';
-import { copy } from 'fs-extra/esm';
+import { copy, ensureFile, remove } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 const PLUGIN_NAME = 'vite-plugin-extjs';
 
 const assets = ['scss'];
@@ -78,7 +73,11 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-/*async function processThemeBundle(themeBundle, sassFilePath, { setSassVars, addImports, replaceImportPaths }) {
+async function transformThemeBundle(
+    themeBundle,
+    sassFilePath,
+    { setSassVars, addImports, replaceImportPaths, assetsBundleSource }
+) {
     await remove(themeBundle);
     await ensureFile(themeBundle);
     const fileReadStream = createReadStream(sassFilePath);
@@ -90,44 +89,49 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     for (const sassVar of setSassVars) {
         fileWriteStream.write(sassVar + EOL);
     }
-    if (Array.isArray(addImports.before)) {
+    if (addImports && Array.isArray(addImports.before)) {
         for (const importPath of addImports.before) {
             fileWriteStream.write(`@import '${importPath}';` + EOL);
         }
     }
     for await (let line of rl) {
-        if (replaceImportPaths) {
+        if (replaceImportPaths && replaceImportPaths.search && replaceImportPaths.replace) {
             line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
         }
         fileWriteStream.write(line + EOL);
     }
-    if (Array.isArray(addImports.after)) {
+    if (addImports && Array.isArray(addImports.after)) {
         for (const importPath of addImports.after) {
             fileWriteStream.write(`@import '${importPath}';` + EOL);
         }
     }
+    if (assetsBundleSource && assetsBundleSource.length) {
+        fileWriteStream.write(assetsBundleSource);
+    }
+
     fileWriteStream.close();
     fileReadStream.close();
-}*/
+}
 
 async function buildTheme(theme, resolvedConfig) {
     let assetsBundleSource = '';
     for (const path of assetsMap) {
         assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
     }
-    const { basePath, sassPath, sassFile, outCssFile, outputDir } = theme;
+    const { basePath, sassPath, sassFile, outCssFile, outputDir, setSassVars, replaceImportPaths, addImports } = theme;
     if (basePath) {
         const themeBundle = resolvePath([basePath, sassPath, '_bundle.scss'].filter(Boolean).join('/'));
         try {
             const sassFilePath = resolvePath([basePath, sassPath, sassFile].filter(Boolean).join('/'));
-            // Copy theme sass file
-            await copy(sassFilePath, themeBundle, { overwrite: true });
-            // Append component sass files to theme bundle
-            if (assetsBundleSource.length) {
-                Logger.warn('Appending component styles...');
-                await appendFile(themeBundle, assetsBundleSource);
-            }
-            const fashionCliPath = normalizePath(__dirname + '/../node_modules/fashion-cli/fashion.js');
+            // Transform theme sass file
+            await transformThemeBundle(themeBundle, sassFilePath, {
+                setSassVars,
+                replaceImportPaths,
+                addImports,
+                assetsBundleSource,
+            });
+
+            const fashionCliPath = resolvePath('/node_modules/fashion-cli/fashion.js');
             // Run fashion-cli
             Logger.warn('[Fashion] Compiling sass to css...');
             const fashion = fork(fashionCliPath, [
