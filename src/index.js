@@ -1,21 +1,27 @@
 import fg from 'fast-glob';
 import { normalizePath } from 'vite';
 import { access, readFile, appendFile, constants } from 'node:fs/promises';
-import * as readline from 'node:readline/promises';
-import { createReadStream, createWriteStream } from 'node:fs';
+// import * as readline from 'node:readline/promises';
+// import { createReadStream, createWriteStream } from 'node:fs';
+import { fork } from 'node:child_process';
+import { fileURLToPath } from 'url';
+import { dirname } from 'node:path';
 import { EOL } from 'node:os';
-import { copy, ensureFile, remove } from 'fs-extra/esm';
+// import { copy, ensureFile, remove } from 'fs-extra/esm';
+import { copy } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const PLUGIN_NAME = 'vite-plugin-extjs';
 
 const assets = ['scss'];
 const scripts = ['js'];
 const assetsMap = [];
 
-function realpath(path) {
+function resolvePath(path) {
     return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
 }
 
@@ -42,7 +48,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     basePath = Array.isArray(basePath) ? basePath : [basePath];
     const globPaths = [];
     for (const path of basePath) {
-        const realPath = realpath(path);
+        const realPath = resolvePath(path);
         try {
             await access(realPath, constants.R_OK);
             Logger.info(`Resolved: ${realPath}`);
@@ -72,101 +78,71 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
     }
 }
 
-async function copyThemeFiles(theme, resolvedConfig) {
+/*async function processThemeBundle(themeBundle, sassFilePath, { setSassVars, addImports, replaceImportPaths }) {
+    await remove(themeBundle);
+    await ensureFile(themeBundle);
+    const fileReadStream = createReadStream(sassFilePath);
+    const fileWriteStream = createWriteStream(themeBundle);
+    const rl = readline.createInterface({
+        input: fileReadStream,
+        crlfDelay: Infinity,
+    });
+    for (const sassVar of setSassVars) {
+        fileWriteStream.write(sassVar + EOL);
+    }
+    if (Array.isArray(addImports.before)) {
+        for (const importPath of addImports.before) {
+            fileWriteStream.write(`@import '${importPath}';` + EOL);
+        }
+    }
+    for await (let line of rl) {
+        if (replaceImportPaths) {
+            line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
+        }
+        fileWriteStream.write(line + EOL);
+    }
+    if (Array.isArray(addImports.after)) {
+        for (const importPath of addImports.after) {
+            fileWriteStream.write(`@import '${importPath}';` + EOL);
+        }
+    }
+    fileWriteStream.close();
+    fileReadStream.close();
+}*/
+
+async function buildTheme(theme, resolvedConfig) {
     let assetsBundleSource = '';
     for (const path of assetsMap) {
         assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
     }
-    const {
-        basePath,
-        sassFile,
-        outPath,
-        outSassFile,
-        setSassVars = [],
-        addImports = {
-            before: [],
-            after: [],
-        },
-        replaceImportPaths,
-        resources = [],
-        resourcesOutPath,
-    } = theme;
-    if (basePath && sassFile) {
-        const themeBundle = realpath(
-            [resolvedConfig.build.outDir, outPath, outSassFile || '_bundle.scss'].filter(Boolean).join('/')
-        );
-        const themeDestPath = [resolvedConfig.build.outDir, outPath].filter(Boolean).join('/');
+    const { basePath, sassPath, sassFile, outCssFile, outputDir } = theme;
+    if (basePath) {
+        const themeBundle = resolvePath([basePath, sassPath, '_bundle.scss'].filter(Boolean).join('/'));
         try {
-            Logger.warn('Copying theme files...');
-            // Copy theme folder
-            await copy(realpath(basePath), realpath(themeDestPath), {
-                overwrite: true,
-                //TODO filter ()=> picomatch pattern to exclude css and etc. files
-            });
-            // Copy extra resources
-            if (Array.isArray(resources) && resources.length) {
-                Logger.warn('Copying extra resources...');
-                for (const resourcePath of resources) {
-                    await copy(
-                        realpath(resourcePath),
-                        realpath([themeDestPath, resourcesOutPath].filter(Boolean).join('/')),
-                        {
-                            overwrite: true,
-                        }
-                    );
-                }
-            }
-            const needRewriteThemeBundle =
-                (Array.isArray(setSassVars) && setSassVars.length) ||
-                (addImports && Array.isArray(addImports.before) && addImports.before.length) ||
-                (addImports && Array.isArray(addImports.after) && addImports.after.length);
-            const needReplaceImportPaths = typeof replaceImportPaths === 'object';
-            // Add css vars &| imports
-            if (needRewriteThemeBundle || needReplaceImportPaths) {
+            const sassFilePath = resolvePath([basePath, sassPath, sassFile].filter(Boolean).join('/'));
+            // Copy theme sass file
+            await copy(sassFilePath, themeBundle, { overwrite: true });
+            // Append component sass files to theme bundle
+            if (assetsBundleSource.length) {
                 Logger.warn('Appending component styles...');
-                await remove(themeBundle);
-                await ensureFile(themeBundle);
-                const fileReadStream = createReadStream(realpath(basePath + '/' + sassFile));
-                const fileWriteStream = createWriteStream(themeBundle);
-                const rl = readline.createInterface({
-                    input: fileReadStream,
-                    crlfDelay: Infinity,
-                });
-                for (const sassVar of setSassVars) {
-                    fileWriteStream.write(sassVar + EOL);
-                }
-                if (Array.isArray(addImports.before)) {
-                    for (const importPath of addImports.before) {
-                        fileWriteStream.write(`@import '${importPath}';` + EOL);
-                    }
-                }
-                for await (let line of rl) {
-                    if (needReplaceImportPaths) {
-                        line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
-                    }
-                    fileWriteStream.write(line + EOL);
-                }
-                fileWriteStream.write(assetsBundleSource);
-                if (Array.isArray(addImports.after)) {
-                    for (const importPath of addImports.after) {
-                        fileWriteStream.write(`@import '${importPath}';` + EOL);
-                    }
-                }
-                fileWriteStream.close();
-                fileReadStream.close();
-            } else {
-                // Copy theme sass file
-                await copy(realpath(basePath + '/' + sassFile), themeBundle, {
-                    overwrite: true,
-                });
-                // Append component sass files to theme bundle
-                if (assetsBundleSource.length) {
-                    Logger.warn('Appending component styles...');
-                    await appendFile(themeBundle, assetsBundleSource);
-                }
+                await appendFile(themeBundle, assetsBundleSource);
             }
-            //TODO copy local theme && required packages to project
-            //TODO run fashion from this script
+            const fashionCliPath = normalizePath(__dirname + '/../node_modules/fashion-cli/fashion.js');
+            // Run fashion-cli
+            Logger.warn('[Fashion] Compiling sass to css...');
+            const fashion = fork(fashionCliPath, [
+                'compile',
+                themeBundle,
+                resolvePath(basePath + '/' + (outCssFile || 'theme.css')),
+            ]);
+            fashion.on('exit', async function (code) {
+                Logger.warn('[Fashion] Finished with exit code ' + code);
+                // Copying theme to outputDir
+                const themeDestDir = resolvePath([resolvedConfig.build.outDir, outputDir].filter(Boolean).join('/'));
+                Logger.warn('Copying compiled theme files...');
+                await copy(resolvePath(basePath), themeDestDir, { overwrite: true });
+                Logger.warn('Done.');
+            });
         } catch (e) {
             console.error(e);
             process.exit(1);
@@ -179,14 +155,7 @@ const viteExtJS = ({
     debug = false,
     exclude = [],
     entryPoints = [],
-    theme = {
-        basePath: '',
-        sassFile: '',
-        outPath: '',
-        outSassFile: '',
-        setSassVars: [],
-        resources: [],
-    },
+    theme = {},
     disableCachingParam = '_dc',
 }) => {
     Logger.config = debug;
@@ -211,7 +180,7 @@ const viteExtJS = ({
         },
         async closeBundle() {
             if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
-                await copyThemeFiles(theme, resolvedConfig);
+                await buildTheme(theme, resolvedConfig);
             }
         },
         async configResolved(config) {
@@ -237,7 +206,7 @@ const viteExtJS = ({
                 }
             }
             if (command === 'serve' && mode === 'development') {
-                await copyThemeFiles(theme, resolvedConfig);
+                await buildTheme(theme, resolvedConfig);
             }
         },
         async transform(code, id) {
