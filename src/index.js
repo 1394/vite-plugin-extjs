@@ -133,7 +133,7 @@ async function buildTheme(theme, resolvedConfig) {
             const fashion = fork(fashionCliPath, [
                 'compile',
                 themeBundle,
-                resolvePath(basePath + '/' + (outCssFile || 'theme.css')),
+                resolvePath(basePath + '/css/' + (outCssFile || 'theme.css')),
             ]);
             fashion.on('exit', async function (code) {
                 Logger.warn('[Fashion] Finished with exit code ' + code);
