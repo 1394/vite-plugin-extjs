@@ -76,7 +76,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
 async function transformThemeBundle(
     themeBundle,
     sassFilePath,
-    { setSassVars, addImports, replaceImportPaths, assetsBundleSource }
+    { setSassVars, addImports, replaceImportPaths, assetsBundleSource, imageSearchPath }
 ) {
     await remove(themeBundle);
     await ensureFile(themeBundle);
@@ -97,6 +97,12 @@ async function transformThemeBundle(
     for await (let line of rl) {
         if (replaceImportPaths && replaceImportPaths.search && replaceImportPaths.replace) {
             line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
+        }
+        if (imageSearchPath) {
+            if (line.includes('$image-search-path')) {
+                fileWriteStream.write(`$image-search-path: '${imageSearchPath}';` + EOL);
+                continue;
+            }
         }
         fileWriteStream.write(line + EOL);
     }
@@ -129,6 +135,7 @@ async function buildTheme(theme, resolvedConfig) {
                 replaceImportPaths,
                 addImports,
                 assetsBundleSource,
+                imageSearchPath: resolvePath(basePath),
             });
 
             const fashionCliPath = resolvePath('/node_modules/fashion-cli/fashion.js');
