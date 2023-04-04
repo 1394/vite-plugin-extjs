@@ -15,6 +15,7 @@ const PLUGIN_NAME = 'vite-plugin-extjs';
 const assets = ['scss'];
 const scripts = ['js'];
 const assetsMap = [];
+const defaultCssFileName = 'theme.css';
 
 function resolvePath(path) {
     return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
@@ -144,15 +145,17 @@ async function buildTheme(theme, resolvedConfig) {
             const fashion = fork(fashionCliPath, [
                 'compile',
                 themeBundle,
-                resolvePath(basePath + '/' + (outCssFile || 'theme.css')),
+                resolvePath(basePath + '/' + (outCssFile || defaultCssFileName)),
             ]);
             fashion.on('exit', async function (code) {
                 Logger.warn('[Fashion] Finished with exit code ' + code);
                 // Copying theme to outputDir
                 const themeDestDir = resolvePath([resolvedConfig.build.outDir, outputDir].filter(Boolean).join('/'));
-                Logger.warn('Copying compiled theme files...');
-                await copy(resolvePath(basePath), themeDestDir, { overwrite: true });
-                Logger.warn('Done.');
+                if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
+                    Logger.warn('Copying compiled theme files...');
+                    await copy(resolvePath(basePath), themeDestDir, { overwrite: true });
+                }
+                Logger.warn('Finished.');
             });
         } catch (e) {
             console.error(e);
@@ -270,6 +273,22 @@ const viteExtJS = ({
                 Logger.info(`+ ${importPaths.length} imports injected.`);
             }
             return { code };
+        },
+        transformIndexHtml() {
+            const { basePath, outCssFile, outputDir } = theme;
+            const cssDir =
+                resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
+            return [
+                {
+                    tag: 'link',
+                    attrs: {
+                        rel: 'stylesheet',
+                        type: 'text/css',
+                        href: [cssDir, outCssFile || defaultCssFileName].join('/'),
+                    },
+                    injectTo: 'head',
+                },
+            ];
         },
     };
 };
