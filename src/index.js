@@ -1,11 +1,11 @@
 import fg from 'fast-glob';
 import { normalizePath } from 'vite';
-import { access, readFile, appendFile, constants } from 'node:fs/promises';
+import { access, readFile, constants } from 'node:fs/promises';
 import * as readline from 'node:readline/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { fork } from 'node:child_process';
 import { EOL } from 'node:os';
-import { copy, ensureFile, remove } from 'fs-extra/esm';
+import { copy, ensureFile, remove, ensureSymlink } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
@@ -171,6 +171,7 @@ const viteExtJS = ({
     entryPoints = [],
     theme = {},
     disableCachingParam = '_dc',
+    symlink,
 }) => {
     Logger.config = debug;
     Logger.prefix = PLUGIN_NAME;
@@ -205,8 +206,15 @@ const viteExtJS = ({
                 return;
             }
             for (const ns of namespaces) {
-                const basePath = paths[ns];
+                let basePath = paths[ns];
                 if (basePath) {
+                    if (typeof symlink === 'object') {
+                        if (symlink[ns]) {
+                            Logger.warn(`Making symlink for "${ns}"...`);
+                            await ensureSymlink(resolvePath(basePath), resolvePath(symlink[ns], 'dir'));
+                            basePath = symlink[ns];
+                        }
+                    }
                     Logger.warn(`Resolving namespace "${ns}"...`);
                     try {
                         const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${ns}" in`;
