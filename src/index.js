@@ -208,7 +208,7 @@ const viteExtJS = ({
             for (const ns of namespaces) {
                 let basePath = paths[ns];
                 if (basePath) {
-                    if (typeof symlink === 'object') {
+                    if (typeof symlink === 'object' && mode === 'development') {
                         if (symlink[ns]) {
                             Logger.warn(`Making symlink for "${ns}"...`);
                             await ensureSymlink(resolvePath(basePath), resolvePath(symlink[ns], 'dir'));
