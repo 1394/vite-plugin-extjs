@@ -1,6 +1,6 @@
 {
     "name": "vite-plugin-extjs",
-    "version": "0.1.18",
+    "version": "0.1.19",
     "author": "ivanovayu@sigma-it.ru",
     "type": "module",
     "scripts": {

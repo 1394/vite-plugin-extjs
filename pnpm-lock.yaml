@@ -5,8 +5,8 @@ dependencies:
     specifier: ^0.1.6
     version: 0.1.6
   fashion-cli:
-    specifier: ^1.0.3
-    version: 1.0.3
+    specifier: ^1.0.4
+    version: 1.0.4
   fast-glob:
     specifier: ^3.2.12
     version: 3.2.12
@@ -346,8 +346,8 @@ packages:
       acorn-walk: 8.2.0
     dev: false
 
-  /fashion-cli@1.0.3:
-    resolution: {integrity: sha512-AyyKKWagGM4QEXn6Vt4gqea/6+BKBE4pMuJ7B72BfUEdb/TGW+n41cUbmwhilNc9ewiHSWY3+LlxuaOHtZQFlA==}
+  /fashion-cli@1.0.4:
+    resolution: {integrity: sha512-UTj6lLpKPWCKtYGPjlv7G6i5VPXMqzGJUKo6niWdildTB7+3pyeP+hjE3hxRRWzBysS4HX3et1Wcbrfwvu4P/A==}
     hasBin: true
     dev: false
 

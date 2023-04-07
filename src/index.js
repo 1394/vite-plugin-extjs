@@ -14,7 +14,7 @@ const PLUGIN_NAME = 'vite-plugin-extjs';
 
 const assets = ['scss'];
 const scripts = ['js'];
-const assetsMap = [];
+let assetsMap = [];
 const defaultCssFileName = 'theme.css';
 
 function resolvePath(path) {
@@ -77,7 +77,7 @@ async function buildMap(basePath, namespace, include = [], exclude = []) {
 async function transformThemeBundle(
     themeBundle,
     sassFilePath,
-    { setSassVars, addImports, replaceImportPaths, assetsBundleSource, imageSearchPath }
+    { setSassVars = [], addImports, replaceImportPaths, assetsBundleSource, imageSearchPath }
 ) {
     await remove(themeBundle);
     await ensureFile(themeBundle);
@@ -125,7 +125,17 @@ async function buildTheme(theme, resolvedConfig) {
     for (const path of assetsMap) {
         assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
     }
-    const { basePath, sassPath, sassFile, outCssFile, outputDir, setSassVars, replaceImportPaths, addImports } = theme;
+    const {
+        basePath,
+        sassPath,
+        sassFile,
+        outCssFile,
+        outputDir,
+        setSassVars,
+        replaceImportPaths,
+        addImports,
+        imageSearchPath,
+    } = theme;
     if (basePath) {
         const themeBundle = resolvePath([basePath, sassPath, '_bundle.scss'].filter(Boolean).join('/'));
         try {
@@ -136,7 +146,7 @@ async function buildTheme(theme, resolvedConfig) {
                 replaceImportPaths,
                 addImports,
                 assetsBundleSource,
-                imageSearchPath: resolvePath(basePath),
+                imageSearchPath: imageSearchPath || resolvePath(basePath),
             });
 
             const fashionCliPath = resolvePath('/node_modules/fashion-cli/fashion.js');
@@ -205,6 +215,7 @@ const viteExtJS = ({
             if ((command === 'serve' && mode === 'production') || namespaces.length === 0) {
                 return;
             }
+            assetsMap = [];
             for (const ns of namespaces) {
                 let basePath = paths[ns];
                 if (basePath) {
