@@ -295,19 +295,21 @@ const viteExtJS = ({
         },
         transformIndexHtml() {
             const { basePath, outCssFile, outputDir } = theme;
-            const cssDir =
-                resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
-            return [
-                {
-                    tag: 'link',
-                    attrs: {
-                        rel: 'stylesheet',
-                        type: 'text/css',
-                        href: [cssDir, outCssFile || defaultCssFileName].join('/'),
+            if (basePath) {
+                const cssDir =
+                    resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
+                return [
+                    {
+                        tag: 'link',
+                        attrs: {
+                            rel: 'stylesheet',
+                            type: 'text/css',
+                            href: [cssDir, outCssFile || defaultCssFileName].join('/'),
+                        },
+                        injectTo: 'head',
                     },
-                    injectTo: 'head',
-                },
-            ];
+                ];
+            }
         },
     };
 };
