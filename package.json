@@ -1,6 +1,6 @@
 {
     "name": "vite-plugin-extjs",
-    "version": "0.1.19",
+    "version": "0.2.0",
     "author": "ivanovayu@sigma-it.ru",
     "type": "module",
     "scripts": {
@@ -29,6 +29,7 @@
         "picocolors": "^1.0.0"
     },
     "devDependencies": {
+        "picomatch": "^2.3.1",
         "prettier": "^2.8.4",
         "vite": "^4.2.1",
         "vite-plugin-inspect": "^0.7.17"
