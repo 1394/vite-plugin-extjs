@@ -147,6 +147,21 @@ const viteExtJS = ({
                 ];
             }
         },
+        async handleHotUpdate(ctx) {
+            const { file, server, modules, read } = ctx;
+            const src = await read();
+            console.log(src);
+            //TODO check if module is in classMap
+            modules.forEach((m) => {
+                console.log(m.url);
+            });
+            server.ws.send({
+                type: 'custom',
+                event: 'special-update',
+                data: { file, modules: modules.map((m) => m.url) },
+            });
+            return [];
+        },
     };
 };
 export default viteExtJS;
