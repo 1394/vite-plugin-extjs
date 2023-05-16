@@ -148,18 +148,31 @@ const viteExtJS = ({
             }
         },
         async handleHotUpdate(ctx) {
-            const { file, server, modules, read } = ctx;
-            const src = await read();
-            console.log(src);
-            //TODO check if module is in classMap
-            modules.forEach((m) => {
-                console.log(m.url);
-            });
-            server.ws.send({
-                type: 'custom',
-                event: 'special-update',
-                data: { file, modules: modules.map((m) => m.url) },
-            });
+            const { file, server, modules } = ctx;
+            let classes = [];
+            const urls = [];
+            console.log(modules.length, 'modules');
+            for (const module of modules) {
+                if (module.url.includes('?_hmr=')) {
+                    continue;
+                }
+                const meta = ExtAnalyzer.getFile(module.id);
+                if (meta) {
+                    urls.push(module.url + '?_hmr=' + module.lastInvalidationTimestamp);
+                    classes = classes.concat(meta.getClassNames());
+                }
+            }
+            if (urls.length) {
+                server.ws.send({
+                    type: 'custom',
+                    event: 'module-update',
+                    data: { file, urls, classes },
+                });
+            } else {
+                server.ws.send({
+                    type: 'full-reload',
+                });
+            }
             return [];
         },
     };
