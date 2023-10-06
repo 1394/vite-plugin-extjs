@@ -58,7 +58,7 @@ const viteExtJS = ({
                     if (typeof symlink === 'object' && mode === 'development') {
                         if (symlink[ns]) {
                             Logger.warn(`Making symlink for "${ns}"...`);
-                            await ensureSymlink(Path.resolve(basePath), Path.resolve(symlink[ns], 'dir'));
+                            await ensureSymlink(Path.resolve(basePath), Path.resolve(symlink[ns]), 'junction');
                             basePath = symlink[ns];
                         }
                     }

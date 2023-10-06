@@ -1,9 +1,13 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 dependencies:
   extjs-code-analyzer:
-    specifier: ^0.1.6
-    version: 0.1.6
+    specifier: ^0.1.7
+    version: 0.1.7
   fashion-cli:
     specifier: ^1.0.4
     version: 1.0.4
@@ -342,8 +346,8 @@ packages:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
     dev: true
 
-  /extjs-code-analyzer@0.1.6:
-    resolution: {integrity: sha512-cqJIVXbDcIUAUw0Wfk2jWuVOma/xC2gYisWBjk8yhl1o3Slbxr+knkzxxAh0xdGYRJ6uP5GVRjALX9eJzAGVtQ==}
+  /extjs-code-analyzer@0.1.7:
+    resolution: {integrity: sha512-zBWJeXHeXDQ/GeOmlbxGFQ4/9L11cvoWgle/k0d053aZCAQKLRVV3dYSgw9cZfXd4TGrPRYkjvfwGNfEQ8Fywg==}
     dependencies:
       acorn: 8.8.2
       acorn-walk: 8.2.0
