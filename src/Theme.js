@@ -103,7 +103,7 @@ export class Theme {
                         Logger.warn('Copying compiled theme files...');
                         await copy(Path.resolve(basePath), themeDestDir, { overwrite: true });
                     }
-                    Logger.warn('Finished.');
+                    Logger.warn('Ready.');
                 });
             } catch (e) {
                 console.error(e);
