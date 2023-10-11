@@ -63,10 +63,10 @@ export class Theme {
         }
         const {
             basePath,
-            sassPath,
+            sassPath = 'sass',
             sassFile,
             outCssFile,
-            outputDir,
+            outputDir = 'theme',
             setSassVars,
             replaceImportPaths,
             addImports,
