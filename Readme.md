@@ -65,9 +65,9 @@ Paths to any files that needs to be analyzed, for example app.js and other, that
   - `sassFile`: `string` sass file name with extension
   - `outputDir`: `string` *default*: `theme` Path to folder (inside Vite build dir) where compiled css file will be
   - `setSassVars`: `string[]` Any needed sass vars for theme build
-  - `replaceImportPaths`: `object`
-    - `search`: `string[]`
-    - `replace`: `string[]`
+  - `replaceImportPaths`: `object` Search/replace paths to resources
+    - `search`: `string`
+    - `replace`: `string`
 
 ### `symlink`
 - **Type:** `object`
