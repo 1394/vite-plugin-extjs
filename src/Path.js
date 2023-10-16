@@ -1,9 +1,10 @@
 import { normalizePath } from 'vite';
+import { relative } from 'node:path';
 import pm from 'picomatch';
 
 export class Path {
-    static resolve(path) {
-        return normalizePath(process.cwd() + '\\' + path).replace(/\\/g, '/');
+    static resolve(path, absolute = true) {
+        return normalizePath((absolute ? process.cwd() : '') + '\\' + path).replace(/\\/g, '/');
     }
 
     static isMatch(path, paths = []) {
@@ -19,5 +20,9 @@ export class Path {
             path.includes('node_modules/.vite'),
             path.includes('vite@'),
         ].some(Boolean);
+    }
+
+    static relative(path) {
+        return this.resolve('/' + relative(process.cwd(), path), false);
     }
 }
