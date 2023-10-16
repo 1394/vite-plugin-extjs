@@ -144,7 +144,7 @@ const viteExtJS = ({
             return { code };
         },
         transformIndexHtml() {
-            const { basePath, outCssFile, outputDir } = theme;
+            const { basePath, outCssFile, outputDir = 'theme' } = theme;
             if (basePath) {
                 const cssDir =
                     resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
