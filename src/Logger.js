@@ -25,10 +25,10 @@ export class Logger {
     }
 
     static echo(msg, level, ...rest) {
-        if (this.skip(level)) {
+        if (this.skip(level) && level !== 'fatal') {
             return;
         }
-        this.addNewLine && console.log();
+        (this.addNewLine || level === 'fatal') && console.log();
         let color;
         switch (level) {
             case 'warn':
@@ -37,6 +37,7 @@ export class Logger {
             case 'info':
                 color = pc.cyan;
                 break;
+            case 'fatal':
             case 'error':
                 color = pc.red;
                 break;
@@ -56,5 +57,10 @@ export class Logger {
 
     static error(msg, ...rest) {
         this.echo(msg, 'error', ...rest);
+    }
+
+    static fatal(msg, ...rest) {
+        this.echo(msg, 'fatal', ...rest);
+        process.exit(1);
     }
 }
