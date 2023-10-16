@@ -1,4 +1,5 @@
 import { EOL } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { ensureSymlink } from 'fs-extra/esm';
 import pc from 'picocolors';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
@@ -24,6 +25,8 @@ const viteExtJS = ({
     const virtualModuleId = `virtual:${PLUGIN_NAME}`;
     const resolvedVirtualModuleId = '\0' + virtualModuleId;
     let resolvedConfig;
+    const ignoredNamespaces = [];
+    const globalMissingImports = {};
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
@@ -45,6 +48,7 @@ const viteExtJS = ({
             }
         },
         async configResolved(config) {
+            Logger.info('Config is resolved');
             resolvedConfig = config;
             const { command, mode } = config;
             const namespaces = Object.keys(paths || {});
@@ -70,8 +74,10 @@ const viteExtJS = ({
                         !Logger.skip('info') && console.timeEnd(timeLabel);
                         ExtAnalyzer.classManager.resolveImports();
                     } catch (e) {
-                        Logger.warn(e.message);
+                        Logger.fatal(e.message);
                     }
+                } else {
+                    ignoredNamespaces.push(ns);
                 }
             }
             if (command === 'serve' && mode === 'development') {
@@ -112,6 +118,14 @@ const viteExtJS = ({
                 Logger.info(`+ ${fileMeta.appliedTransformations} transformations applied.`);
             }
             const importPaths = fileMeta.getImportsPaths();
+            const missingImports = fileMeta.getMissingImports(ignoredNamespaces);
+            if (Object.values(missingImports).filter((imports) => imports.length).length) {
+                const isFatal = resolvedConfig.command === 'build' && resolvedConfig.mode === 'production';
+                Logger[isFatal ? 'fatal' : 'error'](`Missing imports for ${pathToFileURL(cleanId)}`, missingImports);
+                if (!isFatal) {
+                    Object.assign(globalMissingImports, missingImports);
+                }
+            }
             if (!importPaths.length) {
                 Logger.info('- Empty import paths');
                 return { code };
@@ -151,7 +165,15 @@ const viteExtJS = ({
             const { file, server, modules } = ctx;
             let classes = [];
             const urls = [];
-            console.log(modules.length, 'modules');
+            // new module
+            if (!modules.length) {
+                const newMeta = await classMap.add(file);
+                const newClasses = newMeta.getClassNames();
+                if (newClasses.length) {
+                    classes = classes.concat(newMeta.getClassNames());
+                    urls.push(Path.relative(file));
+                }
+            }
             for (const module of modules) {
                 if (module.url.includes('?_hmr=')) {
                     continue;
@@ -174,6 +196,35 @@ const viteExtJS = ({
                 });
             }
             return [];
+        },
+        configureServer(server) {
+            Logger.info('Server is configured.');
+            server.watcher.on('add', async (path) => {
+                console.log({ path }, 'add');
+                /*const newMeta = await classMap.add(path);
+                const newClasses = newMeta.getClassNames();
+                console.log({ globalMissingImports, newClasses });
+                const urls = [];
+                const classes = [];
+                newMeta.definedClasses.forEach((newClass) => {
+                    for (const className in globalMissingImports) {
+                        if (globalMissingImports[className].includes(newClass.name)) {
+                            const classMeta = ExtAnalyzer.getClassByClassName(className);
+                            urls.push(Path.relative(newClass.realPath) + '?_hmr=' + Date.now());
+                            classes.push(newClass.name);
+                            urls.push(Path.relative(classMeta.realPath) + '?_hmr=' + Date.now());
+                            classes.push(classMeta.name);
+                        }
+                    }
+                });
+                if (urls.length) {
+                    server.ws.send({
+                        type: 'custom',
+                        event: 'module-update',
+                        data: { urls, classes },
+                    });
+                }*/
+            });
         },
     };
 };
