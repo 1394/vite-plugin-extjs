@@ -46,4 +46,10 @@ export class ClassMap {
             ExtAnalyzer.analyze(source.toString(), path);
         }
     }
+
+    async add(path) {
+        const source = await readFile(path);
+        ExtAnalyzer.analyze(source, path, true);
+        return ExtAnalyzer.getFile(path);
+    }
 }
