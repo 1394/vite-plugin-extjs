@@ -208,11 +208,14 @@ const viteExtJS = ({
         },
         configureServer(server) {
             Logger.info('Server is configured.');
-            server.watcher.on('add', async (path) => {
-                console.clear();
-                Logger.warn(`Restarting server due to new file: ${path}`);
-                skipThemeBuild = true;
-                server.restart();
+            server.watcher.on('add', async (id) => {
+                const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
+                if (Path.isMatch(Path.relative(cleanId), searchPaths)) {
+                    console.clear();
+                    Logger.warn(`Restarting server due to new file: ${id}`);
+                    skipThemeBuild = true;
+                    server.restart();
+                }
             });
         },
     };

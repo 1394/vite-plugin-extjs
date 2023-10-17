@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   extjs-code-analyzer:
-    specifier: ^0.1.7
-    version: 0.1.7
+    specifier: ^0.1.9
+    version: 0.1.9
   fashion-cli:
     specifier: ^1.0.4
     version: 1.0.4
@@ -346,8 +346,8 @@ packages:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
     dev: true
 
-  /extjs-code-analyzer@0.1.7:
-    resolution: {integrity: sha512-zBWJeXHeXDQ/GeOmlbxGFQ4/9L11cvoWgle/k0d053aZCAQKLRVV3dYSgw9cZfXd4TGrPRYkjvfwGNfEQ8Fywg==}
+  /extjs-code-analyzer@0.1.9:
+    resolution: {integrity: sha512-kAb0AVRA68Rcqp6fHyGfzPRSY/bFAZRn3weqOk5Ulc4iG5M2amJa7fHrL0ckWoZh5+KlTDjXrjnd5wIgfT7Q0Q==}
     dependencies:
       acorn: 8.8.2
       acorn-walk: 8.2.0
