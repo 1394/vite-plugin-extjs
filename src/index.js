@@ -9,8 +9,10 @@ import { Path } from './Path.js';
 import { Theme } from './Theme.js';
 
 const PLUGIN_NAME = 'vite-plugin-extjs';
-
 let classMap = new ClassMap();
+let skipThemeBuild = false;
+const pluralize = (count, noun, suffix = 's') => `${count} ${noun}${count !== 1 ? suffix : ''}`;
+
 const viteExtJS = ({
     paths = {},
     debug = false,
@@ -27,10 +29,13 @@ const viteExtJS = ({
     let resolvedConfig;
     const ignoredNamespaces = [];
     const globalMissingImports = {};
+    const searchPaths = ((typeof paths === 'object' && Object.values(paths).filter(Boolean)) || [])
+        .concat((typeof symlink === 'object' && Object.values(symlink).filter(Boolean)) || [])
+        .flat()
+        .map((path) => (String(path).endsWith('/') ? path + '**/*.js' : path + '/**/*.js'));
     // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
-        // TODO maybe check ignored files here
         resolveId(id) {
             if (id === virtualModuleId) {
                 return resolvedVirtualModuleId;
@@ -80,13 +85,15 @@ const viteExtJS = ({
                     ignoredNamespaces.push(ns);
                 }
             }
-            if (command === 'serve' && mode === 'development') {
+            if (!skipThemeBuild && command === 'serve' && mode === 'development') {
                 await Theme.build(theme, resolvedConfig, classMap.assetsMap);
             }
+            skipThemeBuild = false;
         },
         async transform(code, id) {
             // Prevent transforming of Ext.loader scripts
             if (id.includes(`?${disableCachingParam}=`)) {
+                Logger.info(`- Ignoring (Ext JS Loader): ${id}`);
                 return { code };
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
@@ -96,7 +103,7 @@ const viteExtJS = ({
             }
             const mustInclude = entryPoints.length && entryPoints.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
-                if (typeof ExtAnalyzer.fileMap[cleanId] !== 'object') {
+                if (!Path.isMatch(Path.relative(cleanId), searchPaths)) {
                     Logger.info(`- Ignoring (not mapped): ${id}`);
                     return { code };
                 }
@@ -115,7 +122,7 @@ const viteExtJS = ({
 
             code = fileMeta.applyCodeTransforms(code);
             if (fileMeta.transformedCode) {
-                Logger.info(`+ ${fileMeta.appliedTransformations} transformations applied.`);
+                Logger.info(`+ ${pluralize(fileMeta.appliedTransformations, 'transformation')} applied.`);
             }
             const importPaths = fileMeta.getImportsPaths();
             const missingImports = fileMeta.getMissingImports(ignoredNamespaces);
@@ -132,14 +139,16 @@ const viteExtJS = ({
             }
             let importString = '';
             for (const path of importPaths) {
-                if (path === id) continue;
+                if (path === id) {
+                    continue;
+                }
                 importString += `import '${path}';` + EOL;
             }
             if (importString.length) {
                 // TODO generate && return sourceMap
                 fileMeta.transformedCode =
                     code = `/* <${PLUGIN_NAME}> */${EOL}${importString}/* </${PLUGIN_NAME}> */${EOL}${code}`;
-                Logger.info(`+ ${importPaths.length} imports injected.`);
+                Logger.info(`+ ${pluralize(importPaths.length, 'import')} injected.`);
             }
             return { code };
         },
@@ -188,7 +197,7 @@ const viteExtJS = ({
                 server.ws.send({
                     type: 'custom',
                     event: 'module-update',
-                    data: { file, urls, classes },
+                    data: { urls, classes },
                 });
             } else {
                 server.ws.send({
@@ -200,32 +209,13 @@ const viteExtJS = ({
         configureServer(server) {
             Logger.info('Server is configured.');
             server.watcher.on('add', async (path) => {
-                console.log({ path }, 'add');
-                /*const newMeta = await classMap.add(path);
-                const newClasses = newMeta.getClassNames();
-                console.log({ globalMissingImports, newClasses });
-                const urls = [];
-                const classes = [];
-                newMeta.definedClasses.forEach((newClass) => {
-                    for (const className in globalMissingImports) {
-                        if (globalMissingImports[className].includes(newClass.name)) {
-                            const classMeta = ExtAnalyzer.getClassByClassName(className);
-                            urls.push(Path.relative(newClass.realPath) + '?_hmr=' + Date.now());
-                            classes.push(newClass.name);
-                            urls.push(Path.relative(classMeta.realPath) + '?_hmr=' + Date.now());
-                            classes.push(classMeta.name);
-                        }
-                    }
-                });
-                if (urls.length) {
-                    server.ws.send({
-                        type: 'custom',
-                        event: 'module-update',
-                        data: { urls, classes },
-                    });
-                }*/
+                console.clear();
+                Logger.warn(`Restarting server due to new file: ${path}`);
+                skipThemeBuild = true;
+                server.restart();
             });
         },
     };
 };
+
 export default viteExtJS;

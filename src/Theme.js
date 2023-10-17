@@ -57,6 +57,7 @@ export class Theme {
     }
 
     static async build(theme, resolvedConfig, assetsMap = []) {
+        Logger.warn('[Theme] Build start.');
         let assetsBundleSource = '';
         for (const path of assetsMap) {
             assetsBundleSource += `/* ${path} */${EOL}` + (await readFile(path)).toString() + EOL;
@@ -94,7 +95,7 @@ export class Theme {
                     Path.resolve(basePath + '/' + (outCssFile || this.defaultCssFileName)),
                 ]);
                 fashion.on('exit', async function (code) {
-                    Logger.warn('[Fashion] Finished with exit code ' + code);
+                    Logger.warn('[Fashion] Finished with exit code ' + code + '.');
                     // Copying theme to outputDir
                     const themeDestDir = Path.resolve(
                         [resolvedConfig.build.outDir, outputDir].filter(Boolean).join('/')
@@ -103,7 +104,7 @@ export class Theme {
                         Logger.warn('Copying compiled theme files...');
                         await copy(Path.resolve(basePath), themeDestDir, { overwrite: true });
                     }
-                    Logger.warn('Ready.');
+                    Logger.warn('[Theme] Build end.');
                 });
             } catch (e) {
                 console.error(e);
