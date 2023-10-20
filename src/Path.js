@@ -4,7 +4,7 @@ import pm from 'picomatch';
 
 export class Path {
     static resolve(path, absolute = true) {
-        return normalizePath((absolute ? process.cwd() : '') + '\\' + path).replace(/\\/g, '/');
+        return normalizePath((absolute ? process.cwd() : '') + '/' + path).replace(/\\|\/\//g, '/');
     }
 
     static isMatch(path, paths = []) {

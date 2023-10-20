@@ -2,6 +2,7 @@ import { EOL } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { ensureSymlink } from 'fs-extra/esm';
 import pc from 'picocolors';
+import MagicString from 'magic-string';
 import { ExtAnalyzer } from 'extjs-code-analyzer/src/Analyzer';
 import { Logger } from './Logger.js';
 import { ClassMap } from './ClassMap.js';
@@ -11,6 +12,8 @@ import { Theme } from './Theme.js';
 const PLUGIN_NAME = 'vite-plugin-extjs';
 let classMap = new ClassMap();
 let skipThemeBuild = false;
+let totalModules = 0;
+let sourceMapIsEnabled = false;
 const pluralize = (count, noun, suffix = 's') => `${count} ${noun}${count !== 1 ? suffix : ''}`;
 
 const viteExtJS = ({
@@ -32,8 +35,8 @@ const viteExtJS = ({
     const searchPaths = ((typeof paths === 'object' && Object.values(paths).filter(Boolean)) || [])
         .concat((typeof symlink === 'object' && Object.values(symlink).filter(Boolean)) || [])
         .flat()
+        .map((path) => Path.resolve(path))
         .map((path) => (String(path).endsWith('/') ? path + '**/*.js' : path + '/**/*.js'));
-    // noinspection JSUnusedGlobalSymbols
     return {
         name: PLUGIN_NAME,
         resolveId(id) {
@@ -49,12 +52,16 @@ const viteExtJS = ({
         },
         async closeBundle() {
             if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
+                Logger.warn('Total processed modules: ' + totalModules + '.');
                 await Theme.build(theme, resolvedConfig, classMap.assetsMap);
             }
         },
         async configResolved(config) {
-            Logger.info('Config is resolved');
+            Logger.info('Config is resolved.');
             resolvedConfig = config;
+            sourceMapIsEnabled =
+                resolvedConfig.build?.sourcemap === true ||
+                resolvedConfig.build?.rollupOptions?.output?.sourcemap === true;
             const { command, mode } = config;
             const namespaces = Object.keys(paths || {});
             if ((command === 'serve' && mode === 'production') || namespaces.length === 0) {
@@ -91,36 +98,38 @@ const viteExtJS = ({
             skipThemeBuild = false;
         },
         async transform(code, id) {
+            let map = null;
             // Prevent transforming of Ext.loader scripts
             if (id.includes(`?${disableCachingParam}=`)) {
                 Logger.info(`- Ignoring (Ext JS Loader): ${id}`);
-                return { code };
+                return { code, map };
             }
             const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
             if (Path.isIgnore(cleanId)) {
                 Logger.info(`- Ignoring (always skip): ${id}`);
-                return { code };
+                return { code, map };
             }
             const mustInclude = entryPoints.length && entryPoints.some((pattern) => id.includes(pattern));
             if (!mustInclude) {
-                if (!Path.isMatch(Path.relative(cleanId), searchPaths)) {
+                if (!Path.isMatch(cleanId, searchPaths)) {
                     Logger.info(`- Ignoring (not mapped): ${id}`);
-                    return { code };
+                    return { code, map };
                 }
                 if (Path.isMatch(id, exclude)) {
                     Logger.info(` - Skipping: ${id}`);
-                    return { code };
+                    return { code, map };
                 }
             }
             const fileMeta = ExtAnalyzer.sync(code, cleanId);
             if (fileMeta.isCached && fileMeta.transformedCode) {
                 Logger.info(`- Ignoring (not changed): ${id}`);
-                return { code: fileMeta.transformedCode };
+                return { code: fileMeta.transformedCode, map };
             }
 
             Logger.info(`+ Analyzing: ${id}`);
 
-            code = fileMeta.applyCodeTransforms(code);
+            // TODO try magic-string
+            code = fileMeta.applyCodeTransforms();
             if (fileMeta.transformedCode) {
                 Logger.info(`+ ${pluralize(fileMeta.appliedTransformations, 'transformation')} applied.`);
             }
@@ -134,8 +143,15 @@ const viteExtJS = ({
                 }
             }
             if (!importPaths.length) {
-                Logger.info('- Empty import paths');
-                return { code };
+                Logger.info('- Empty import paths.');
+                totalModules++;
+                if (fileMeta.appliedTransformations) {
+                    if (sourceMapIsEnabled) {
+                        Logger.info('+ Generating new sourcemap.');
+                        map = new MagicString(fileMeta.transformedCode).generateMap({ hires: true }).toString();
+                    }
+                }
+                return { code, map };
             }
             let importString = '';
             for (const path of importPaths) {
@@ -145,12 +161,21 @@ const viteExtJS = ({
                 importString += `import '${path}';` + EOL;
             }
             if (importString.length) {
-                // TODO generate && return sourceMap
                 fileMeta.transformedCode =
                     code = `/* <${PLUGIN_NAME}> */${EOL}${importString}/* </${PLUGIN_NAME}> */${EOL}${code}`;
                 Logger.info(`+ ${pluralize(importPaths.length, 'import')} injected.`);
             }
-            return { code };
+            totalModules++;
+            if (importString.length || fileMeta.appliedTransformations) {
+                if (sourceMapIsEnabled) {
+                    Logger.info('+ Generating new sourcemap.');
+                    map = new MagicString(fileMeta.transformedCode).generateMap({ hires: true }).toString();
+                }
+            }
+            return {
+                code,
+                map,
+            };
         },
         transformIndexHtml() {
             const { basePath, outCssFile, outputDir = 'theme' } = theme;
@@ -210,7 +235,7 @@ const viteExtJS = ({
             Logger.info('Server is configured.');
             server.watcher.on('add', async (id) => {
                 const cleanId = (id.includes('?') && id.slice(0, id.indexOf('?'))) || id;
-                if (Path.isMatch(Path.relative(cleanId), searchPaths)) {
+                if (Path.isMatch(cleanId, searchPaths)) {
                     console.clear();
                     Logger.warn(`Restarting server due to new file: ${id}`);
                     skipThemeBuild = true;
