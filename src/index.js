@@ -73,12 +73,12 @@ const viteExtJS = ({
                 if (basePath) {
                     if (typeof symlink === 'object' && mode === 'development') {
                         if (symlink[ns]) {
-                            Logger.warn(`Making symlink for "${ns}"...`);
+                            Logger.info(`Making symlink for "${ns}"...`);
                             await ensureSymlink(Path.resolve(basePath), Path.resolve(symlink[ns]), 'junction');
                             basePath = symlink[ns];
                         }
                     }
-                    Logger.warn(`Resolving namespace "${ns}"...`);
+                    Logger.info(`Resolving namespace "${ns}"...`);
                     try {
                         const timeLabel = `${pc.cyan(`[${PLUGIN_NAME}]`)} Analyzed "${ns}" in`;
                         !Logger.skip('info') && console.time(timeLabel);
@@ -130,8 +130,15 @@ const viteExtJS = ({
 
             // TODO try magic-string
             code = fileMeta.applyCodeTransforms();
-            if (fileMeta.transformedCode) {
+            if (fileMeta.appliedTransformations) {
                 Logger.info(`+ ${pluralize(fileMeta.appliedTransformations, 'transformation')} applied.`);
+                if (sourceMapIsEnabled) {
+                    Logger.info('+ Generating new sourcemap.');
+                    map = fileMeta.sourceMap = new MagicString(fileMeta.transformedCode).generateMap({
+                        hires: 'boundary',
+                        file: id,
+                    });
+                }
             }
             const importPaths = fileMeta.getImportsPaths();
             const missingImports = fileMeta.getMissingImports(ignoredNamespaces);
@@ -145,12 +152,6 @@ const viteExtJS = ({
             if (!importPaths.length) {
                 Logger.info('- Empty import paths.');
                 totalModules++;
-                if (fileMeta.appliedTransformations) {
-                    if (sourceMapIsEnabled) {
-                        Logger.info('+ Generating new sourcemap.');
-                        map = new MagicString(fileMeta.transformedCode).generateMap({ hires: true }).toString();
-                    }
-                }
                 return { code, map };
             }
             let importString = '';
@@ -166,16 +167,7 @@ const viteExtJS = ({
                 Logger.info(`+ ${pluralize(importPaths.length, 'import')} injected.`);
             }
             totalModules++;
-            if (importString.length || fileMeta.appliedTransformations) {
-                if (sourceMapIsEnabled) {
-                    Logger.info('+ Generating new sourcemap.');
-                    map = new MagicString(fileMeta.transformedCode).generateMap({ hires: true }).toString();
-                }
-            }
-            return {
-                code,
-                map,
-            };
+            return { code, map: fileMeta.sourceMap };
         },
         transformIndexHtml() {
             const { basePath, outCssFile, outputDir = 'theme' } = theme;
