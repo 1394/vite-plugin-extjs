@@ -20,13 +20,9 @@ export class ClassMap {
         const patterns = [];
         for (const path of basePath) {
             const realPath = Path.resolve(path);
-            try {
-                await access(realPath, constants.R_OK);
-                Logger.info(`Resolved: ${realPath}`);
-                patterns.push(realPath + `/**/*.+(${[...this.scripts, ...this.assets].join('|')})`);
-            } catch (e) {
-                throw e;
-            }
+            await access(realPath, constants.R_OK);
+            Logger.info(`Resolved: ${realPath}`);
+            patterns.push(realPath + `/**/*.+(${[...this.scripts, ...this.assets].join('|')})`);
         }
         for (const path of await fg(patterns)) {
             if (this.assets.length && this.assets.some((ext) => path.endsWith(`.${ext}`))) {
