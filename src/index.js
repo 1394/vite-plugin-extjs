@@ -99,6 +99,7 @@ const viteExtJS = ({
         },
         async transform(code, id) {
             let map = null;
+            const isProdBuild = resolvedConfig.command === 'build' && resolvedConfig.mode === 'production';
             // Prevent transforming of Ext.loader scripts
             if (id.includes(`?${disableCachingParam}=`)) {
                 Logger.info(`- Ignoring (Ext JS Loader): ${id}`);
@@ -128,11 +129,10 @@ const viteExtJS = ({
 
             Logger.info(`+ Analyzing: ${id}`);
 
-            // TODO try magic-string
             code = fileMeta.applyCodeTransforms();
             if (fileMeta.appliedTransformations) {
                 Logger.info(`+ ${pluralize(fileMeta.appliedTransformations, 'transformation')} applied.`);
-                if (sourceMapIsEnabled) {
+                if (sourceMapIsEnabled && isProdBuild) {
                     Logger.info('+ Generating new sourcemap.');
                     map = fileMeta.sourceMap = new MagicString(fileMeta.transformedCode).generateMap({
                         hires: 'boundary',
@@ -143,9 +143,11 @@ const viteExtJS = ({
             const importPaths = fileMeta.getImportsPaths();
             const missingImports = fileMeta.getMissingImports(ignoredNamespaces);
             if (Object.values(missingImports).filter((imports) => imports.length).length) {
-                const isFatal = resolvedConfig.command === 'build' && resolvedConfig.mode === 'production';
-                Logger[isFatal ? 'fatal' : 'error'](`Missing imports for ${pathToFileURL(cleanId)}`, missingImports);
-                if (!isFatal) {
+                Logger[isProdBuild ? 'fatal' : 'error'](
+                    `Missing imports for ${pathToFileURL(cleanId)}`,
+                    missingImports
+                );
+                if (!isProdBuild) {
                     Object.assign(globalMissingImports, missingImports);
                 }
             }
