@@ -32,8 +32,15 @@ export class Theme {
             }
         }
         for await (let line of rl) {
-            if (replaceImportPaths && replaceImportPaths.search && replaceImportPaths.replace) {
-                line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
+            if (typeof replaceImportPaths === 'object') {
+                if (replaceImportPaths.search && replaceImportPaths.replace) {
+                    line = line.replace(replaceImportPaths.search, replaceImportPaths.replace);
+                } else {
+                    // key-value format
+                    for (const search in replaceImportPaths) {
+                        line = line.replace(search, replaceImportPaths[search]);
+                    }
+                }
             }
             if (imageSearchPath) {
                 if (line.includes('$image-search-path')) {
@@ -56,7 +63,7 @@ export class Theme {
         fileReadStream.close();
     }
 
-    static async build(theme, resolvedConfig, assetsMap = []) {
+    static async build(theme, resolvedConfig, assetsMap = [], callback) {
         Logger.warn('[Theme] Build start.');
         let assetsBundleSource = '';
         for (const path of assetsMap) {
@@ -105,6 +112,7 @@ export class Theme {
                         await copy(Path.resolve(basePath), themeDestDir, { overwrite: true });
                     }
                     Logger.warn('[Theme] Build end.');
+                    typeof callback === 'function' && callback();
                 });
             } catch (e) {
                 console.error(e);

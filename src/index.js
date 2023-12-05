@@ -143,10 +143,7 @@ const viteExtJS = ({
             const importPaths = fileMeta.getImportsPaths();
             const missingImports = fileMeta.getMissingImports(ignoredNamespaces);
             if (Object.values(missingImports).filter((imports) => imports.length).length) {
-                Logger[isProdBuild ? 'fatal' : 'error'](
-                    `Missing imports for ${pathToFileURL(cleanId)}`,
-                    missingImports
-                );
+                Logger[isProdBuild ? 'fatal' : 'error'](`Missing imports for ${cleanId}`, missingImports);
                 if (!isProdBuild) {
                     Object.assign(globalMissingImports, missingImports);
                 }
@@ -181,6 +178,7 @@ const viteExtJS = ({
                         tag: 'link',
                         attrs: {
                             rel: 'stylesheet',
+                            id: 'main-theme',
                             type: 'text/css',
                             href: [cssDir, outCssFile || Theme.defaultCssFileName].join('/'),
                         },
@@ -191,6 +189,21 @@ const viteExtJS = ({
         },
         async handleHotUpdate(ctx) {
             const { file, server, modules } = ctx;
+            if (Path.isMatch(file, ['**/*.scss'])) {
+                Logger.warn('Recompiling theme css file.');
+                server.ws.send({
+                    type: 'custom',
+                    event: 'theme-update-begin',
+                });
+                await Theme.build(theme, resolvedConfig, classMap.assetsMap, () => {
+                    Logger.warn('Reloading theme css file.');
+                    server.ws.send({
+                        type: 'custom',
+                        event: 'theme-update-end',
+                    });
+                });
+                return;
+            }
             let classes = [];
             const urls = [];
             // new module
