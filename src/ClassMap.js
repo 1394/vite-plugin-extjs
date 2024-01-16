@@ -15,7 +15,7 @@ export class ClassMap {
         this.assetsMap = [];
     }
 
-    async build(basePath, namespace, include = [], exclude = []) {
+    async build(basePath, namespace, entryPoints = [], exclude = []) {
         basePath = Array.isArray(basePath) ? basePath : [basePath];
         const patterns = [];
         for (const path of basePath) {
@@ -32,11 +32,9 @@ export class ClassMap {
             if (this.scripts.length && !this.scripts.some((ext) => path.endsWith(`.${ext}`))) {
                 continue;
             }
-            if (!(include.length && include.some((pattern) => path.includes(pattern)))) {
-                if (Path.isMatch(path, exclude)) {
-                    Logger.info(`- Skipping: ${path}`);
-                    continue;
-                }
+            if (Path.isMatch(path, exclude)) {
+                Logger.info(`- Skipping excluded: ${path}`);
+                continue;
             }
             const source = await readFile(path);
             ExtAnalyzer.analyze(source.toString(), path);
