@@ -64,6 +64,9 @@ export class Theme {
     }
 
     static async build(theme, resolvedConfig, assetsMap = [], callback) {
+        if (!theme || (typeof theme === 'object' && !Object.keys(theme).length)) {
+            return;
+        }
         Logger.warn('[Theme] Build start.');
         let assetsBundleSource = '';
         for (const path of assetsMap) {
