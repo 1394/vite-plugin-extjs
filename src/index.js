@@ -1,5 +1,4 @@
 import { EOL } from 'node:os';
-import { pathToFileURL } from 'node:url';
 import { ensureSymlink } from 'fs-extra/esm';
 import pc from 'picocolors';
 import MagicString from 'magic-string';
