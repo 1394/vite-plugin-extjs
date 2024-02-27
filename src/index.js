@@ -188,6 +188,12 @@ const viteExtJS = ({
         },
         async handleHotUpdate(ctx) {
             const { file, server, modules } = ctx;
+            if (Path.isIgnore(file)) {
+                server.ws.send({
+                    type: 'full-reload',
+                });
+                return [];
+            }
             if (Path.isMatch(file, ['**/*.scss'])) {
                 Logger.warn('Recompiling theme css file.');
                 server.ws.send({
