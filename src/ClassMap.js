@@ -43,7 +43,11 @@ export class ClassMap {
 
     async add(path) {
         const source = await readFile(path);
-        ExtAnalyzer.analyze(source.toString(), path, true);
-        return ExtAnalyzer.getFile(path);
+        try {
+            ExtAnalyzer.analyze(source.toString(), path, true);
+            return ExtAnalyzer.getFile(path);
+        } catch (e) {
+            Logger.error(e.message, path);
+        }
     }
 }

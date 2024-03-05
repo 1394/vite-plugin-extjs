@@ -214,8 +214,8 @@ const viteExtJS = ({
             // new module
             if (!modules.length) {
                 const newMeta = await classMap.add(file);
-                const newClasses = newMeta.getClassNames();
-                if (newClasses.length) {
+                const newClasses = newMeta?.getClassNames();
+                if (newClasses?.length) {
                     classes = classes.concat(newMeta.getClassNames());
                     urls.push(Path.relative(file));
                 }

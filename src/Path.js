@@ -19,6 +19,7 @@ export class Path {
             path.endsWith('?direct'),
             path.includes('node_modules/.vite'),
             path.includes('vite@'),
+            path.endsWith('.xml'),
         ].some(Boolean);
     }
 
