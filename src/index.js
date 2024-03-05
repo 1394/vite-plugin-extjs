@@ -230,7 +230,7 @@ const viteExtJS = ({
                     classes = classes.concat(meta.getClassNames());
                 }
             }
-            if (urls.length) {
+            if (urls.length && classes.length) {
                 server.ws.send({
                     type: 'custom',
                     event: 'module-update',
