@@ -1,6 +1,14 @@
-import { normalizePath } from 'vite';
-import { relative } from 'node:path';
+import { relative, posix } from 'node:path';
 import pm from 'picomatch';
+
+function slash(p) {
+    return p.replace(/\\/g, '/');
+}
+
+export function normalizePath(id) {
+    const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
+    return posix.normalize(isWindows ? slash(id) : id);
+}
 
 export class Path {
     static resolve(path, absolute = true) {
