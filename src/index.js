@@ -168,7 +168,7 @@ const viteExtJS = ({
             return { code, map: fileMeta.sourceMap };
         },
         transformIndexHtml() {
-            const { basePath, outCssFile, outputDir = 'theme' } = theme;
+            const { basePath, outCssFile, outputDir = 'theme', injectTo = 'head-prepend' } = theme;
             if (basePath) {
                 const cssDir =
                     resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
@@ -181,7 +181,7 @@ const viteExtJS = ({
                             type: 'text/css',
                             href: [cssDir, outCssFile || Theme.defaultCssFileName].join('/'),
                         },
-                        injectTo: 'head',
+                        injectTo,
                     },
                 ];
             }
