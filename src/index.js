@@ -45,7 +45,9 @@ const viteExtJS = ({
         },
         load(id) {
             if (id === resolvedVirtualModuleId) {
-                return `export const classMap = ${ExtAnalyzer.classManager.classMapToJSON()};
+                return `export const classMap = ${ExtAnalyzer.classManager.propToJSON('classMap')};
+                        export const aliasMap = ${ExtAnalyzer.classManager.propToJSON('aliasMap')};
+                        export const xtypeMap = ${ExtAnalyzer.classManager.propToJSON('xtypeMap')};
                         export const loaderPaths = ${JSON.stringify(paths)};`;
             }
         },
@@ -120,7 +122,7 @@ const viteExtJS = ({
                     return { code, map };
                 }
             }
-            const fileMeta = ExtAnalyzer.sync(code, cleanId);
+            const fileMeta = ExtAnalyzer.sync(code, Path.relative(cleanId));
             if (fileMeta.isCached && fileMeta.transformedCode) {
                 Logger.info(`- Ignoring (not changed): ${id}`);
                 return { code: fileMeta.transformedCode, map };

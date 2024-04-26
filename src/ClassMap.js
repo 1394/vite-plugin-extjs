@@ -37,14 +37,14 @@ export class ClassMap {
                 continue;
             }
             const source = await readFile(path);
-            ExtAnalyzer.analyze(source.toString(), path);
+            ExtAnalyzer.analyze(source.toString(), Path.relative(path));
         }
     }
 
     async add(path) {
         const source = await readFile(path);
         try {
-            ExtAnalyzer.analyze(source.toString(), path, true);
+            ExtAnalyzer.analyze(source.toString(), Path.relative(path), true);
             return ExtAnalyzer.getFile(path);
         } catch (e) {
             Logger.error(e.message, path);
