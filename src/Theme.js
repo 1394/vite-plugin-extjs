@@ -93,7 +93,7 @@ export class Theme {
                     replaceImportPaths,
                     addImports,
                     assetsBundleSource,
-                    imageSearchPath: imageSearchPath || Path.resolve(basePath),
+                    imageSearchPath: Path.resolve(imageSearchPath || basePath),
                 });
 
                 const fashionCliPath = Path.resolve('/node_modules/fashion-cli/fashion.js');
@@ -101,7 +101,6 @@ export class Theme {
                 Logger.warn('[Fashion] Compiling sass to css...');
                 const outCssFilePath = Path.resolve(basePath + '/' + (outCssFile || this.defaultCssFileName));
                 const fashion = fork(fashionCliPath, ['compile', themeBundle, outCssFilePath]);
-                //TODO run lightning css https://lightningcss.dev/docs.html
                 fashion.on('exit', async function (code) {
                     Logger.warn('[Fashion] Finished with exit code ' + code + '.');
                     // Copying theme to outputDir
