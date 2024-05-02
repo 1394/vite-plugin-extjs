@@ -63,9 +63,9 @@ export class Theme {
         fileReadStream.close();
     }
 
-    static async build(theme, resolvedConfig, assetsMap = [], callback) {
+    static async build(theme, resolvedConfig, assetsMap = []) {
         if (!theme || (typeof theme === 'object' && !Object.keys(theme).length)) {
-            return;
+            return false;
         }
         Logger.warn('[Theme] Build start.');
         let assetsBundleSource = '';
@@ -95,29 +95,39 @@ export class Theme {
                     assetsBundleSource,
                     imageSearchPath: Path.resolve(imageSearchPath || basePath),
                 });
-
-                const fashionCliPath = Path.resolve('/node_modules/fashion-cli/fashion.js');
-                // Run fashion-cli
-                Logger.warn('[Fashion] Compiling sass to css...');
                 const outCssFilePath = Path.resolve(basePath + '/' + (outCssFile || this.defaultCssFileName));
-                const fashion = fork(fashionCliPath, ['compile', themeBundle, outCssFilePath]);
-                fashion.on('exit', async function (code) {
-                    Logger.warn('[Fashion] Finished with exit code ' + code + '.');
-                    // Copying theme to outputDir
+                Logger.warn('[Fashion] Compiling sass to css...');
+                // Run fashion-cli
+                const code = await this.compile(outCssFilePath, themeBundle);
+                Logger.warn('[Fashion] Finished with exit code ' + code + '.');
+                // Copying theme to outputDir
+                if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
                     const themeDestDir = Path.resolve(
                         [resolvedConfig.build.outDir, outputDir].filter(Boolean).join('/')
                     );
-                    if (resolvedConfig.command === 'build' && resolvedConfig.mode === 'production') {
-                        Logger.warn('Copying compiled theme files...');
-                        await copy(Path.resolve(basePath), themeDestDir, { overwrite: true });
-                    }
-                    Logger.warn('[Theme] Build end.');
-                    typeof callback === 'function' && callback();
-                });
+                    Logger.warn('Copying compiled theme files...');
+                    await copy(Path.resolve(basePath), themeDestDir, { overwrite: true });
+                }
+                Logger.warn('[Theme] Build end.');
+                return true;
             } catch (e) {
                 console.error(e);
                 process.exit(1);
             }
         }
+        return false;
+    }
+
+    static compile(outCssFilePath, themeBundle) {
+        return new Promise((resolve) => {
+            const fashion = fork(Path.resolve('/node_modules/fashion-cli/fashion.js'), [
+                'compile',
+                themeBundle,
+                outCssFilePath,
+            ]);
+            fashion.on('exit', (code) => {
+                resolve(code);
+            });
+        });
     }
 }

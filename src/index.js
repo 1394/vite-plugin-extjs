@@ -14,7 +14,7 @@ let skipThemeBuild = false;
 let totalModules = 0;
 let sourceMapIsEnabled = false;
 const pluralize = (count, noun, suffix = 's') => `${count} ${noun}${count !== 1 ? suffix : ''}`;
-
+let themePath;
 const viteExtJS = ({
     paths = {},
     debug = false,
@@ -93,6 +93,12 @@ const viteExtJS = ({
                     ignoredNamespaces.push(ns);
                 }
             }
+
+            const { basePath, outCssFile, outputDir = 'theme' } = theme;
+            const cssDir =
+                resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
+            themePath = [cssDir, outCssFile || Theme.defaultCssFileName].join('/');
+
             if (!skipThemeBuild && command === 'serve' && mode === 'development') {
                 await Theme.build(theme, resolvedConfig, classMap.assetsMap);
             }
@@ -170,10 +176,8 @@ const viteExtJS = ({
             return { code, map: fileMeta.sourceMap };
         },
         transformIndexHtml() {
-            const { basePath, outCssFile, outputDir = 'theme', injectTo = 'head-prepend' } = theme;
-            if (basePath) {
-                const cssDir =
-                    resolvedConfig.command === 'build' && resolvedConfig.mode === 'production' ? outputDir : basePath;
+            if (themePath) {
+                const { injectTo = 'head-prepend' } = theme;
                 return [
                     {
                         tag: 'link',
@@ -181,7 +185,7 @@ const viteExtJS = ({
                             rel: 'stylesheet',
                             id: 'main-theme',
                             type: 'text/css',
-                            href: [cssDir, outCssFile || Theme.defaultCssFileName].join('/'),
+                            href: themePath,
                         },
                         injectTo,
                     },
@@ -196,14 +200,10 @@ const viteExtJS = ({
                     type: 'custom',
                     event: 'theme-update-begin',
                 });
-                await Theme.build(theme, resolvedConfig, classMap.assetsMap, () => {
-                    Logger.warn('Reloading theme css file.');
-                    server.ws.send({
-                        type: 'custom',
-                        event: 'theme-update-end',
-                    });
-                });
-                return;
+                await Theme.build(theme, resolvedConfig, classMap.assetsMap);
+                Logger.warn('Reloading theme css file.');
+                const themeModule = await server.moduleGraph.getModuleByUrl(themePath + '?direct');
+                return themeModule ? [themeModule] : undefined;
             }
             if (Path.isIgnore(file)) {
                 server.ws.send({

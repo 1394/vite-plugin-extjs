@@ -7,6 +7,11 @@ export default {
     optimizeDeps: {
         exclude: ['theme'],
     },
+    server: {
+        watch: {
+            ignored: ['**/.idea/**'],
+        },
+    },
     plugins: [
         viteExtJS({
             paths: {
