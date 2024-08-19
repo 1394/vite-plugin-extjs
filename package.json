@@ -21,7 +21,6 @@
         "extjs"
     ],
     "dependencies": {
-        "fashion-cli": "^1.0.4",
         "fast-glob": "^3.3.2",
         "fs-extra": "^11.2.0",
         "magic-string": "^0.30.8",
