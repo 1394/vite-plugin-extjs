@@ -21,7 +21,7 @@
         "extjs"
     ],
     "dependencies": {
-        "github:1394/extjs-code-analyzer": "^0.1.9",
+        "1394/extjs-code-analyzer": "^0.1.9",
         "fashion-cli": "^1.0.4",
         "fast-glob": "^3.3.2",
         "fs-extra": "^11.2.0",
